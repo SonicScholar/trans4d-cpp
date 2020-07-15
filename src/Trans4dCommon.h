@@ -216,3 +216,7 @@ extern struct VGRID
   double b[800000 +1] = {0};
 } common_vgrid;
 #pragma endregion
+
+
+void InitBd();
+void InitDataFiles();
