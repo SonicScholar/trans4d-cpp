@@ -1,19 +1,13 @@
-#include <iostream>
-#include "Trans4dCommon.h"
+#include "trans4d.h"
 
-using std::cout;
-using std::endl;
-
-DECLARE_COMMON_BNDRY
-
-int main()
+void trans4d::InitBlockData() 
 {
-    InitDataFiles();
-
-    cout << "Welcome to Trans4d C++ Edition" << endl;
-    for (size_t i = 0; i < sizeof(common_bndry.X)/sizeof(double); i++)
+    if(!_blockDataInitialized)
     {
-        cout << "common_bndry.X[" << i << "]= " << X[i] << endl;
+        InitBd();
+        InitEq();
+        InitPs();
+        InitVl();
+        _blockDataInitialized = true;
     }
-    
 }

@@ -19,13 +19,13 @@ extern struct BNDRY
 #define NUMGRD 8
 #define DECLARE_COMMON_CDGRID\
 /* CDGRID */\
-double (&grdlx)[NUMGRD+1] = common_cdgrid.grdlx;\
-double (&grdux)[NUMGRD+1] = common_cdgrid.grdux;\
-double (&grdly)[NUMGRD+1] = common_cdgrid.grdly;\
-double (&grduy)[NUMGRD+1] = common_cdgrid.grduy;\
-int (&icntx)[NUMGRD+1] = common_cdgrid.icntx;\
-int (&icnty)[NUMGRD+1] = common_cdgrid.icnty;\
-int (&nbase)[NUMGRD+1] = common_cdgrid.nbase;
+double (&GRDLX)[NUMGRD+1] = common_cdgrid.grdlx;\
+double (&GRDUX)[NUMGRD+1] = common_cdgrid.grdux;\
+double (&GRDLY)[NUMGRD+1] = common_cdgrid.grdly;\
+double (&GRDUY)[NUMGRD+1] = common_cdgrid.grduy;\
+int (&ICNTX)[NUMGRD+1] = common_cdgrid.icntx;\
+int (&ICNTY)[NUMGRD+1] = common_cdgrid.icnty;\
+int (&NBASE)[NUMGRD+1] = common_cdgrid.nbase;
 extern struct CDGRID
 {
   double grdlx[NUMGRD+1] = {0};
@@ -216,7 +216,3 @@ extern struct VGRID
   double b[800000 +1] = {0};
 } common_vgrid;
 #pragma endregion
-
-
-void InitBd();
-void InitDataFiles();

@@ -11,8 +11,3 @@ REFCON  common_refcon;
 TIMREF  common_timref;
 TRANPA  common_tranpa;
 VGRID   common_vgrid;
-
-void InitDataFiles()
-{
-    InitBd();
-}
