@@ -1,5 +1,8 @@
 #include "Trans4dCommon.h"
 
+//You must change Trans4D version here if necessary
+#define TRANS4D_VERSION "0.2.6"
+
 class trans4d{
     private:
         bool _blockDataInitialized;
@@ -37,7 +40,8 @@ class trans4d{
         void GRDWEI(double const& YLON, double const& YLAT, int const& JREGN, int& I, int&J, double (&WEI)[2][2] );
         int IPSGRD(int const& IGRID, int const& I, int const& J, int const& IVEC);
         int IUNGRD(int IREGN, int I, int J, int IVEC);
-        void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD);
+        //C++ Port: Moved IYMDMJ to utility_helpers.h
+        //void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD);
         void MODEL();
         void NEWCOR(double& YLAT, double& YLON, double& HTOLD, int& MIN1, int& MIN2, double& YLAT3, double& YLON3, double& HTNEW, 
             double& DN, double& DE, double& DU, double& VN, double& VE, double& VU);

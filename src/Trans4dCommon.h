@@ -5,6 +5,7 @@
 /* BNDRY */\
 double (&X)[5000 + 1] = common_bndry.X;\
 double (&Y)[5000 + 1] = common_bndry.Y;\
+const int NMREGN = 24;\
 int (&NPOINT)[30 + 1] = common_bndry.NPOINT;
 extern struct BNDRY
 {
@@ -63,6 +64,16 @@ extern struct CONST
 } common_const;
 #pragma endregion
 
+#pragma region GRIDFILES
+#define DECLARE_COMMON_GRIDFILES \
+/* GRIDFILES */ \
+int &IGRID = common_gridfiles.IGRID;\
+int (&NeededGrid)[8 + 1] = common_gridfiles.NeededGrid;
+extern struct GRIDFILES {
+    int IGRID;
+    int NeededGrid[8 +1] = {0};
+} common_gridfiles;
+#pragma endregion
 
 #pragma region PSGRID
 #define DECLARE_COMMON_PSGRID \
