@@ -1,3 +1,5 @@
+#ifndef UTILITY_HELPERS_H
+#define UTILITY_HELPERS_H
 #include <math.h>
 
 /* BUILT IN FORTRAN FUNCTIONS */
@@ -109,3 +111,4 @@ inline void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD)
 // C      
     return;
 }
+#endif

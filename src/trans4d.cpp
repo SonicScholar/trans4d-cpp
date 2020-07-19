@@ -1,6 +1,9 @@
 #include "trans4d.h"
 #include "utility_helpers.h"
 
+bool _blockDataInitialized = false;
+
+
 void trans4d::GETBDY()
 {
     DECLARE_COMMON_CONST

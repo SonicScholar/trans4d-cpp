@@ -21,8 +21,12 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
               int& LOND, int& LONM, double &SLON, char& LONDIR, 
               char NAME24[24]/*string?*/,
               double& X, double& Y, double& Z,
-              double& YLAT, double& YLON, double& EHT)
+              double& LAT, double& LON, double& EHT)
 {
+    DECLARE_COMMON_CONST
+    double ELON;
+
+
     //retrieve the name of the point
     cout << " Enter name for point (24 character max)." << endl;
     string inputString;
@@ -58,6 +62,21 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
         cout << " predicted motions are independent of this height.)" << endl;
 
         cin >> EHT;
+
+        LAT =  (DBLE((LATD*60 + LATM)*60) + SLAT)/RHOSEC;
+	    LATDIR = 'N';
+        ELON = -LON;
+        //todo:
+        //trans4d::TOXYZ(LAT,ELON,EHT,X,Y,Z);
+	    LONDIR = 'W';
+	    if (LON < 0.0)
+        {
+            LOND = -LOND;
+            LONM = -LONM;
+            SLON = -SLON;
+            LONDIR = 'E';
+        }
+
     }
     else if (copt == 2)
     {
@@ -276,7 +295,7 @@ void ProgramLoop()
 void VELOC()
 {
     int LATD, LATM, LOND, LONM;
-    double SLAT, SLON, YLAT, YLON, EHT, X, Y, Z;
+    double SLAT, SLON, LAT, LON, EHT, X, Y, Z;
     char LATDIR, LONDIR;
     char NAME24[24];
     char PVOUT;
@@ -344,7 +363,7 @@ void VELOC()
     else if (OPTION == 1)
     {
         GetPoint(LATD, LATM, SLAT, LATDIR, LOND, LONM, SLON, LONDIR,
-        NAME24, X, Y, Z, YLAT, YLON, EHT);
+        NAME24, X, Y, Z, LAT, LON, EHT);
     }
 
 
@@ -352,11 +371,10 @@ void VELOC()
 
 int main()
 {
-    trans4d trans4d;
-    trans4d.InitBlockData();
-    trans4d.MODEL();
-    trans4d.SETTP();
-    trans4d.SETRF();
+    trans4d::InitBlockData();
+    trans4d::MODEL();
+    trans4d::SETTP();
+    trans4d::SETRF();
 
     PrintProgramDescription();
     ProgramLoop();
