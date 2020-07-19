@@ -34,108 +34,108 @@ refactored into a shared library (dll in Windows)
 Bluebook format related operations are unsupported at this time.
 
 
------------------------
-## Current Porting Progress
+
+# Current Porting Progress
 
 All of the subroutines are listed here from the original trans4d.f file.
 Below shows progress on subroutines being ported, as well as what is complete.
-The `In Progress` section shows what line number the subroutine is translated to.
+The `In Progress` section shows what line number the subroutine is translated up to.
+
+|Key| Status     |
+|---|:-----------|
+| X | Not needed |
+| * | In progress|
+| ? | Not started|
 
 
-_Key_
+## IN PROGRESS
 
-- X - Not needed
-- \* - In progress
-- ? - Not started
-- D - Done
-
-### IN PROGRESS
---------
-
-* PROGRAM TRANS4D
-	- line 124: estimate crustal velocities
-	- (skipped line 122: call to dplace)
-
-* VELOC
-	- 2236
-
-* GETPNT
-	- 4756
+| SUBROUTINE     | STATUS         | Progress       |
+|----------------|:--------------:|----------------|
+| TRANS4D MAIN   | *              | line 124. skipped line 122: call to dplace |
+| VELOC          | *              | line 2236      |
+| GETPNT         | *              | line 4756      |
 
 
+## COMPLETE
 
-### TODO
---------
-? DPLACE
-? GETREG
-? POLYIN
-? RADR8T
-? COMVEL
-? getgrid
-? PLATVL
-? PVPRNT
-? DSDA
-? HELINV
-? TRFDAT
-? TNFDAT
-? TOXYZ
-? RADII
-? GETLYN
-? DIRCT1
-? TOCHAR
-? DDXYZ
-? DISLOC
-? OKADA
-? OKADAW
-? GRDWEI
-? GRDVEC
-? RDEG
-? TOMNT
-? TOVNEU
-? TOVXYZ
-? to_std_dev_xyz_velocity
-? VELOC
-? GTOVEL
-? XTOITRF2014
-? TRFPOS1
-? PRNTTP
-? from_itrf2014
-? to_itrf2014
-? trfbb
-? GETPO4
-? UPBB4
-? CHECK
-? UPGFI4
-? TODMSS
-? RFCON
-? RFCON1
-? TRAVEC
-? GETPNT
-? GETVLY
-? COMPSN
-? NEWCOR
-? PREDV
-? TRFVEL
-? VTRANF
-? PRINTVL
-? GETMDY
-? IYMDMJ
-? PDISP
-? GRDCHK
-? PSGWEI
-? GRDAMP
-? extract_name
-? interprate_XYZ_record       - refactor spelling?
-? interprate_latlon_record    - refactor spelling?
-? interprate_latlonvel_record - refactor spelling?
-? get_frames
-? tran_frames
+| SUBROUTINE     | STATUS         |
+|----------------|:--------------:|
+| MENU1          | Done           |
+| MODEL          | Done           |
+| GETBDY         | Done           |
+| HEADER         | Done           |
+| SETTP          | Done           |
+| SETRF          | Done           |
 
-### COMPLETE
---------------
-D MENU1
-D MODEL
-D GETBDY
-D HEADER
-D SETTP
-D SETRF
+
+## TODO
+
+| SUBROUTINE     | STATUS         | NOTES          |
+|----------------|:--------------:|----------------|
+| DPLACE         | ?              |
+| GETREG         | ?              |
+| POLYIN         | ?              |
+| RADR8T         | ?              |
+| COMVEL         | ?              |
+| getgrid        | ?              |
+| PLATVL         | ?              |
+| PVPRNT         | ?              |
+| DSDA           | ?              |
+| HELINV         | ?              |
+| TRFDAT         | ?              |
+| TNFDAT         | ?              |
+| TOXYZ          | ?              |
+| RADII          | ?              |
+| GETLYN         | ?              |
+| DIRCT1         | ?              |
+| TOCHAR         | ?              |
+| DDXYZ          | ?              |
+| DISLOC         | ?              |
+| OKADA          | ?              |
+| OKADAW         | ?              |
+| GRDWEI         | ?              |
+| GRDVEC         | ?              |
+| RDEG           | ?              |
+| TOMNT          | ?              |
+| TOVNEU         | ?              |
+| TOVXYZ         | ?              |
+| to_std_dev_xyz_velocity      | ?              |
+| VELOC          | ?              |
+| GTOVEL         | ?              |
+| XTOITRF2014    | ?              |
+| TRFPOS1        | ?              |
+| PRNTTP         | ?              |
+| from_itrf2014  | ?              |
+| to_itrf2014    | ?              |
+| trfbb          | ?              |
+| GETPO4         | ?              |
+| UPBB4          | ?              |
+| CHECK          | ?              |
+| UPGFI4         | ?              |
+| TODMSS         | ?              |
+| RFCON          | ?              |
+| RFCON1         | ?              |
+| TRAVEC         | ?              |
+| GETPNT         | ?              |
+| GETVLY         | ?              |
+| COMPSN         | ?              |
+| NEWCOR         | ?              |
+| PREDV          | ?              |
+| TRFVEL         | ?              |
+| VTRANF         | ?              |
+| PRINTVL        | ?              |
+| GETMDY         | ?              |
+| IYMDMJ         | ?              |
+| PDISP          | ?              |
+| GRDCHK         | ?              |
+| PSGWEI         | ?              |
+| GRDAMP         | ?              |
+| extract_name   | ?              |
+| interprate_XYZ_record        | ?              |  refactor spelling?
+| interprate_latlon_record     | ?              |  refactor spelling?
+| interprate_latlonvel_record  | ?              |  refactor spelling?
+| get_frames     | ?              |
+| tran_frames    | ?              |
+
+---------------
