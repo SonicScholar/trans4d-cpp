@@ -1,5 +1,7 @@
 /*PORTED COMMON BLOCKS */
 
+#define numref 17
+
 #pragma region BNDRY
 #define DECLARE_COMMON_BNDRY \
 /* BNDRY */\
@@ -157,10 +159,9 @@ extern struct QPARM
 #define DECLARE_COMMON_REFCON\
 /* REFCON */\
 int (&IRFCON)[29 + 1] = common_refcon.IRFCON;\
-int (&JRFCON)[REFCON::numref + 1] = common_refcon.JRFCON;
+int (&JRFCON)[numref + 1] = common_refcon.JRFCON;
 extern struct REFCON
 {
-    static const int numref = 17;
     int IRFCON[29 + 1] =  {0};
     int JRFCON[numref + 1] = {0};
 } common_refcon;
@@ -181,24 +182,23 @@ extern struct TIMREF
 #pragma region TRANPA
 #define DECLARE_COMMON_TRANPA \
 /*TRANPA*/ \
-double (&tx)[TRANPA::numref + 1] = common_tranpa.tx;\
-double (&ty)[TRANPA::numref + 1] = common_tranpa.ty;\
-double (&tz)[TRANPA::numref + 1] = common_tranpa.tz;\
-double (&dtx)[TRANPA::numref + 1] = common_tranpa.dtx;\
-double (&dty)[TRANPA::numref + 1] = common_tranpa.dty;\
-double (&dtz)[TRANPA::numref + 1] = common_tranpa.dtz;\
-double (&rx)[TRANPA::numref + 1] = common_tranpa.rx;\
-double (&ry)[TRANPA::numref + 1] = common_tranpa.ry;\
-double (&rz)[TRANPA::numref + 1] = common_tranpa.rz;\
-double (&drx)[TRANPA::numref + 1] = common_tranpa.drx;\
-double (&dry)[TRANPA::numref + 1] = common_tranpa.dry;\
-double (&drz)[TRANPA::numref + 1] = common_tranpa.drz;\
-double (&scale)[TRANPA::numref + 1] = common_tranpa.scale;\
-double (&dscale)[TRANPA::numref + 1] = common_tranpa.dscale;\
-double (&refepc)[TRANPA::numref + 1] = common_tranpa.refepc;
+double (&tx)[numref + 1] = common_tranpa.tx;\
+double (&ty)[numref + 1] = common_tranpa.ty;\
+double (&tz)[numref + 1] = common_tranpa.tz;\
+double (&dtx)[numref + 1] = common_tranpa.dtx;\
+double (&dty)[numref + 1] = common_tranpa.dty;\
+double (&dtz)[numref + 1] = common_tranpa.dtz;\
+double (&rx)[numref + 1] = common_tranpa.rx;\
+double (&ry)[numref + 1] = common_tranpa.ry;\
+double (&rz)[numref + 1] = common_tranpa.rz;\
+double (&drx)[numref + 1] = common_tranpa.drx;\
+double (&dry)[numref + 1] = common_tranpa.dry;\
+double (&drz)[numref + 1] = common_tranpa.drz;\
+double (&scale)[numref + 1] = common_tranpa.scale;\
+double (&dscale)[numref + 1] = common_tranpa.dscale;\
+double (&refepc)[numref + 1] = common_tranpa.refepc;
 extern struct TRANPA
 {
-    static const int numref = 17;
     double tx[numref + 1] = {0};
     double ty[numref + 1] = {0};
     double tz[numref + 1] = {0};
