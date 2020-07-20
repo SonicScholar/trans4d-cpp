@@ -1,8 +1,168 @@
+#include <iostream>
 #include "trans4d.h"
 #include "utility_helpers.h"
 
 bool _blockDataInitialized = false;
 
+void trans4d::COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double& VE, double& VU, double& SN, double& SE, double&SU)
+{
+    //
+    // Compute the ITRF2014 velocity at a point in mm/yr
+    //
+
+    int IPLATE = 0;
+    double ELON = 0;
+    double HT = 0;
+    double X = 0;
+    double Y = 0;
+    double Z = 0;
+    double VX = 0;
+    double VY = 0;
+    double VZ = 0;
+    int I = 0;
+    int J = 0;
+
+    DECLARE_COMMON_CONST
+    DECLARE_COMMON_VGRID
+    double WEI[2][2] = {0};
+    double VEL[2][2][3] = {0};
+    double STDEV[2][2][3] = {0};
+
+    if(JREGN > NUMGRD && JREGN < NMREGN)
+    {
+        // Use tectonic plate model to compute velocity relative
+        // to ITRF2014
+        IPLATE = JREGN - NUMGRD;
+        
+        // *** Subtract the number of placeholder regions
+        IPLATE = IPLATE - 5;
+
+        ELON = - YLON;
+        HT = 0.e0;
+        TOXYZ(YLAT, ELON, HT, X, Y, Z);
+        PLATVL(IPLATE, X, Y, Z, VX, VY, VZ);
+        VX = VX * 1000.e0;
+        VY = VY * 1000.e0;
+        VZ = VZ * 1000.e0;
+// *** Convert ITRF2008 velocity to NAD_83(CORS96) velocity
+// c       CALL VTRANF(X, Y, Z, VX, VY, VZ, 15, 1)          !No Do not. Leave the velocity in ITRF2008
+        //TODO!!! TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
+
+    }
+    //C++ port TODO!!!
+//     else if(JREGN >= 1 && JREGN <= NUMGRD)
+//     {
+
+// // C*** Get indices for the lower left hand corner of the grid
+// // C*** and get the weights for the four corners
+//         GRDWEI (YLON, YLAT, JREGN, I, J, WEI);
+
+// // C*** Get the velocity vectors at the four corners
+//         GRDVEC (JREGN, I, J, VEL, b);
+
+//         VN = WEI[0][0] * VEL[0][0][0] + WEI[0][1] * VEL[0][1][0]
+//            + WEI[1][0] * VEL[1][0][0] + WEI[1][1] * VEL[1][1][0];
+
+//         VE = WEI[0][0] * VEL[0][0][1] + WEI[0][1] * VEL[0][1][1]
+//            + WEI[1][0] * VEL[1][0][1] + WEI[1][1] * VEL[1][1][1];
+  
+//         VU = WEI[0][0] * VEL[0][0][2] + WEI[0][1] * VEL[0][1][2]
+//            + WEI[1][0] * VEL[1][0][2] + WEI[1][1] * VEL[1][1][2];
+
+//     PRINT_DOUBLE(VN)
+//     PRINT_DOUBLE(VE)
+//     PRINT_DOUBLE(VU)
+
+// // C*** If the point in one of the four Alaskan regions,
+// // C*** then set its vertical velocity to 0.0
+//         if(JREGN >= 7 && JREGN <= 10)
+//            VU = 0.e0;
+
+// // C*** If the point is in one of the first ten regions, then
+// // c*** the velocity grids contain the ITRF2008 velocity.
+// // c*** Hence, the following code transforms this ITRF2008 velocity
+// // c*** to the corresponding NAD 83 (CORS96) velocity. 
+// // C
+// // c       IF(JREGN .LE. NUMGRD) THEN                            !Starting09/12/2014, the velocities
+// // c          ELON = - YLON                                      !coming out of this routine are in ITRF2008
+// // c          HT = 0.D0
+// // c          CALL TOXYZ(YLAT, ELON, HT, X, Y, Z)
+// // c          CALL TOVXYZ(YLAT, ELON, VN, VE, VU, VX, VY, VZ)
+// // c          CALL VTRANF( X, Y, Z, VX, VY, VZ, 15, 1)
+// // c          CALL TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU)
+// // c       ENDIF
+
+//     }
+//     else
+//     {
+//         std::cout << "Improper region identifier in COMVEL " << std::endl;
+//         STOP(666);
+//     }
+//     return;
+}
+
+bool trans4d::FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht)
+ {
+     bool frmxyz;
+    // *** convert x,y,z into geodetic lat, lon, and ellip. ht
+    // *** ref: eq a.4b, p. 132, appendix a, osu #370
+    // *** ref: geom geod notes gs 658, rapp
+ 
+    double slat = 0;
+    double clat = 0;
+    double w = 0;
+    double en = 0;
+    //       implicit double precision(a-h,o-z)
+    //       parameter(maxint=10,tol=1.d-13)
+    const int maxint = 10;
+    const double tol = 1.e-13;
+    //       common/CONST/ a,f,e2,ep2,af,pi,twopi,rhosec
+    DECLARE_COMMON_CONST
+    double ae2=A*E2;
+ 
+    // *** compute initial estimate of reduced latitude  (eht=0)
+ 
+    double p=DSQRT(x*x+y*y);
+    int icount=0;
+    double tgla=z  / p /(1.e0-E2);
+ 
+    // *** iterate to convergence, or to max # iterations
+ 
+    label_1:
+    if(icount <= maxint)
+    {
+        double tglax=tgla;
+        tgla=z/(p-(ae2/DSQRT(1.e0+(1.e0-E2)*tgla*tgla)));
+        icount=icount+1;
+        if(DABS(tgla-tglax) > tol) 
+            goto label_1;
+ 
+        // *** convergence achieved
+    
+        frmxyz= true;
+        glat=DATAN(tgla);
+        double slat=DSIN(glat);
+        double clat=DCOS(glat);
+        glon=DATAN2(y,x);
+        w=DSQRT(1.e0-E2*slat*slat);
+        en=A/w;
+        if(DABS(glat) <= 0.7854e0)
+            eht=p/clat-en;
+        else
+          eht=z/slat-en+E2*en;
+        glon=DATAN2(y,x);
+ 
+        // *** too many iterations
+    } 
+    else
+    {
+        frmxyz= false;
+        glat=0.e0;
+        glon=0.e0;
+        eht=0.e0;
+    }
+    return frmxyz;
+ }
 
 void trans4d::GETBDY()
 {
@@ -42,6 +202,83 @@ void trans4d::GETBDY()
         Y[J] = (Y[J] * 3600.0)/RHOSEC;
 
     }
+}
+
+void trans4d::GETREG(double& X0, double& YKEEP, int& JREGN)
+{
+    DECLARE_COMMON_BNDRY
+    DECLARE_COMMON_CONST
+
+    double Y0 = TWOPI - YKEEP;
+    int IR = 0;
+
+    if (Y0 < 0.e0) Y0 = Y0 + TWOPI;
+        IR = 0;
+
+    label_1:
+    IR = IR + 1;
+    if(IR > NMREGN)
+    {
+         JREGN = 0;
+         return;
+    }
+    
+    int IBEGIN = NPOINT[IR];
+    int NUMVER = NPOINT[IR + 1] - IBEGIN;
+    int NTEST = 0;
+
+    POLYIN(X0,Y0,X[IBEGIN],Y[IBEGIN], NUMVER, NTEST);
+
+    if(NTEST == 0) 
+        goto label_1;
+    JREGN = IR;
+}
+
+void trans4d::GTOVEL(double const& YLAT, double const& YLON,  double const& EHT,
+double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ, int& JREGN, int const& IOPT,
+double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ)
+{
+    // *** Compute velocity in appropriate reference frame for point with
+    // *** latitude YLAT (radians), longitude YLON (radians, positive west)
+    // *** and ellipsoid height EHT (meters) in this reference frame.
+
+    //*** Get reference latitude RLAT and reference longitude RLON in ITRF2014
+    double RLAT, RLON, ELON;
+    double X, Y, Z;
+    double DATE;
+    double EHT14;
+
+    if(IOPT == 16)
+    {
+          RLAT = YLAT;
+          RLON = YLON;
+    }
+    else 
+    {
+        ELON = -YLON;
+        TOXYZ(YLAT,ELON,EHT,X,Y,Z);
+        DATE = 2010.0e0;
+        XTOITRF2014(X,Y,Z,RLAT,RLON,EHT14,DATE,IOPT);
+    }
+
+    // Get velocity in ITRF2014 
+    GETREG(RLAT,RLON,JREGN);
+    if (JREGN == 0) 
+        return;
+
+    COMVEL(RLAT,RLON,JREGN,VN,VE,VU,SN,SE,SU);
+
+    ELON = -YLON;
+    //TOVXYZ(YLAT,ELON,VN,VE,VU,VX,VY,VZ);
+    //C++ port TODO!!!!
+    // to_std_dev_xyz_velocity(YLAT,ELON,SN,SE,SU,SX,SY,SZ);
+
+    // // Convert velocity into another reference frame if needed
+    // if(IOPT != 16)
+    // {
+    //      VTRANF(X,Y,Z,VX,VY,VZ, 16, IOPT);
+    //      TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
+    // }
 }
 
 //call this to ensure that data for boundaries, earthquake, post-seismic, and velocity grid are initialized
@@ -98,6 +335,340 @@ void trans4d::MODEL()
     NeededGrid[6] = 1;
     NeededGrid[7] = 1;
     NeededGrid[8] = 2;
+}
+
+void trans4d::PLATVL(int& IPLATE, double& X, double& Y, double& Z, double& VX, double& VY, double& VZ)
+{
+    // *** Compute the ITRF2014 velocity at point on plate = IPLATE
+    // ***    with coordinates X, Y, Z (in meters)
+    // ***    The resulting velocities--VX, VY, and VZ--will be in meters/yr
+    // ***    References 
+    // ***     Altamimi et al. 2017 = JGR (Paper on ITRF2014 plate motion)
+    // ***     Kreemer e al. 2014 = Geochem. Geophys. & Geosyst., vol 15
+    // ***     DeMets et al. 2010 = Geophysical Journal Int'l, vol 181, 
+    // ***     Snay 2003 = SALIS, Vol 63, No 1 (Paper on Frames for Pacific)
+    // ***     Bird 2003 = Geochem. Geophys. & Geosyst., (Paper on plate boundaries)
+
+    // *** IPLATE = 1 --> North America (from Altamimi et al. 2017)
+    // ***          2 --> Caribbean (from Kreemer et al. 2014)
+    // ***          3 --> Pacific (from Altamimi et al. 2017)
+    // ***          4 --> Juan de Fuca (from DeMets et al. 2010)
+    // ***          5 --> Cocos (from DeMets et al. 2010)
+    // ***          6 --> Mariana (from Snay, 2003)
+    // ***          7 --> Philippine Sea (from Kreemer et al. 2014)
+    // ***          8 --> South America (from Altamimi et al. 2017)
+    // ***          9 --> Nazca (from Altamimi et al. 2017)
+    // ***         10 --> Panama (from Kreemer et al. 2014)
+    // ***         11 --> North Andes (from Bird 2003)
+
+    //C++ Porting note: arrays WX, WY, & WZ are 1 based with an extra 0 in the beginning
+    //making sure that anything that access their elements by index does not need -1 in it.
+
+    // ORIGINAL FORTRAN DATA 
+    //   DATA WX /0.116D-9,  -0.675D-9,-1.983D-9, 
+    //  1         6.636D-9, -10.380D-9,-0.097D-9,
+    //  2         9.221D-9,  -1.309D-9,-1.614D-9, 
+    //  3         2.088D-9,  -1.872D-9 /
+    //   DATA WY /-3.365D-9, -3.826D-9, 5.076D-9,
+    //  1         11.761D-9,-14.900D-9, 0.509D-9,
+    //  2         -4.963D-9, -1.459D-9,-0.679D-9, 
+    //  3        -23.037D-9, -1.285D-9 /
+    //   DATA WZ /-0.305D-9,  2.910D-9,-10.516D-9, 
+    //  1        -10.630D-9,  9.133D-9, -1.682D-9,
+    //  2        -11.554D-9, -0.679D-9,  7.868D-9, 
+    //  3          6.729D-9, -0.067D-9 /  
+
+    static const double WX[11 + 1] = { 0, 0.116e-9, -0.675e-9, -1.983e-9, 
+                                        6.636e-9, -10.380e-9, -0.097e-9, 
+                                        9.221e-9,  -1.309e-9, -1.614e-9,
+                                        2.088e-9, -1.872e-9};
+
+    static const double WY[11 + 1] = { 0, -3.365e-9, -3.826e-9, 5.076e-9,
+                                        11.761e-9, -14.900e-9, 0.509e-9,
+                                        -4.963e-9, -1.459e-9,-0.679e-9,
+                                        -23.037e-9, -1.285e-9};
+
+    static const double WZ[11 + 1] = { 0,  -0.305e-9,  2.910e-9, -10.516e-9,
+                                        -10.630e-9,  9.133e-9, -1.682e-9,
+                                        -11.554e-9, -0.679e-9,  7.868e-9,
+                                        6.729e-9, -0.067e-9};
+
+    if(IPLATE <= 0 || IPLATE > 11)
+    {
+        std::cout << " Improper plate ID in PLATVL " << IPLATE;
+        exit(666);
+    }
+
+    VX = -WZ[IPLATE] * Y + WY[IPLATE] * Z;
+    VY =  WZ[IPLATE] * X - WX[IPLATE] * Z;
+    VZ = -WY[IPLATE] * X + WX[IPLATE] * Y;
+
+    // *** The parameters--WX, WY, and WZ--refer to ITRF2000
+    // *** for the Mariana Plate (Snay, 2003). Hence,
+    // *** for this plate, VX, VY, and VZ, correspond to ITRF2000.
+    // *** The following code converts these to ITRF2008 velocities for
+    // *** this plate.
+    if(IPLATE == 6)
+    {
+         VX = VX*1000.e0;
+         VY = VY*1000.e0;
+         VZ = VZ*1000.e0;
+         //TODO!!! VTRANF(X, Y, Z, VX, VY, VZ, 11, 15);
+         VX = VX/1000.e0;
+         VY = VY/1000.e0;
+         VZ = VZ/1000.e0;
+    }
+// *** The following translations rates are added per Altamimi et al. (2012)
+// *** for the other six plates
+    else
+    {
+        VX = 0.00041e0 + VX;
+        VY = 0.00022e0 + VY;
+        VZ = 0.00041e0 + VZ;
+    }
+}
+
+void trans4d::POLYIN(double& X0, double& Y0, double& X, double& Y, int& N, int& NPC)
+{
+    double* arr_X = &X;
+    double* arr_Y = &Y;
+
+    // C     SUBROUTINE TO DETERMINE IF A POINT AT (X0,Y0) IS INSIDE OR
+    // C     OUTSIDE OF A CLOSED FIGURE DESCRIBED BY A SEQUENCE OF CONNECTED
+    // C     STRAIGHT LINE SEGMENTS WITH VERTICES AT X, Y.
+    // C
+    // C     INPUT -
+    // C         X0, Y0    COORDINATES OF A POINT TO BE TESTED
+    // C                    Y0 corresponds to longitude and must be a number
+    // C                    between 0.0 and 2*PI
+    // C         X, Y      ARRAYS CONTAINING THE VERTICES, IN ORDER, OF A
+    // C                   CLOSED FIGURE DESCRIBED BY STRAIGHT LINE SEGMNENTS.
+    // C                   FOR EACH 'I', THE STRAIGHT LINE FROM (XI),Y(I)) TO
+    // C                   TO (X(I+1),Y(I+1)), IS AN EDGE OF THE FIGURE.
+    // C         N         DIMENSION OF X AND Y, NUMBER OF VERTICES, AND NUMBER
+    // C                   OF STRAIGHT LINE SEGMENTS IN FIGURE.
+    // C     OUTPUT -
+    // C         NPC       NPC=0 WHEN X0,Y0 IS OUTSIDE OF FIGURE DESCRIBED
+    // C                   BY X,Y
+    // C                   NPC=1 WHEN X0,Y0 IS INSIDE FIGURE
+    // C                   NPC=2 WHEN X0,Y0 IS ON BORDER OF FIGURE
+    // C     METHOD -
+    // C     A COUNT IS MADE OF THE NUMBER OF TIMES THE LINE FROM (X0,Y0) TO
+    // C     (X0,+ INFINITY) CROSSES THE BORDER OF THE FIGURE. IF THE COUNT
+    // C     IS ODD, THE POINT IS INSIDE; IF THE COUNT IS EVEN THE POINT
+    // C     IS OUTSIDE.
+    // C     LIMITATIONS -
+    // C     NONE. THE PROGRAM LOGIC IS VALID FOR ALL CLOSED FIGURES,
+    // C     NO MATTER HOW COMPLEX.
+    // C     ACCURACY -
+    // C     MAINTAINS FULL ACCURACY OF INPUT COORDINATES.
+    // C
+    //       IMPLICIT INTEGER(I-N)
+    //       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+    //       DIMENSION X(N),Y(N)
+    //       DATA I6/6/
+    int IS=0;
+    int IP=0;
+    int IL=0;
+    double XL=0;
+    double YL=0;
+    int IP1=0;
+    int IPN=0;
+    int II=0;
+    int I=0;
+    NPC=0;
+    // C
+    // C     FIND STARTING POINT WHERE X(I).NE.X0
+
+    label_10:
+    IP = IP + 1;
+    
+
+    switch(IF_ARITHMETIC(arr_X[IP]-X0))
+    {
+        case -1: goto label_15;
+        case 0: goto label_12;
+        default: goto label_16;
+    } 
+    label_12:
+    if(IP <= N) goto label_10;
+    std::cout << "0 POLYGON INPUT ERROR - ALL POINTS ON LINE X = X0" << std::endl;
+    exit(666);
+    //       STOP
+    label_15:
+    IL = -1;
+    goto label_20;
+
+    label_16:
+    IL=1;
+
+    label_20:
+    XL = arr_X[IP];
+    YL = arr_Y[IP];
+    // C
+    // C     SET UP SEARCH LOOP
+    // C
+    IP1=IP+1;
+    IPN=IP+N;
+    //       DO 100 II=IP1,IPN
+    for(II=IP1; II<=IPN; II++)
+    {
+        I=II;
+        if(I > N) 
+        I=I-N;
+        // IF(IL) 30,50,40
+        switch(IF_ARITHMETIC(IL))
+        {
+            case -1: goto label_30;
+            case 0: goto label_50;
+            default: goto label_40;
+        }
+
+    
+        //    30 IF(X(I)-X0) 90,32,34
+        label_30:
+        switch(IF_ARITHMETIC(arr_X[I]-X0))
+        {
+            case -1: goto label_90;
+            case 0: goto label_32;
+            default: goto label_34;
+        }
+
+        label_32:
+        IS=-1;
+        goto label_60;
+
+        label_34:
+        IL=1;
+        goto label_80;
+        
+        label_40:
+        //    40 IF(X(I)-X0) 42,44,90
+        switch(IF_ARITHMETIC(arr_X[I]-X0))
+        {
+            case -1: goto label_42;
+            case 0: goto label_44;
+            default: goto label_90;
+        }
+
+        label_42:
+        IL=-1;
+        goto label_80;
+
+        label_44:
+        IS=1;
+        goto label_60;
+
+        label_50:
+        //    50 IF(X(I)-X0) 52,55,54
+        switch(IF_ARITHMETIC(arr_X[I]-X0))
+        {
+            case -1: goto label_52;
+            case 0: goto label_55;
+            default: goto label_54;
+        }
+
+        label_52:
+        IL=-1;
+        //       IF(IS) 90,140,80
+        switch(IF_ARITHMETIC(IS))
+        {
+            case -1: goto label_90;
+            case 0: goto label_140;
+            default: goto label_80;
+        }
+        label_54:
+        IL=1;
+        //       IF(IS) 80,140,90
+            switch(IF_ARITHMETIC(IS))
+        {
+            case -1: goto label_80;
+            case 0: goto label_140;
+            default: goto label_90;
+        }
+
+        label_55:
+        //    55 IF(Y(I)-Y0) 57,120,58
+        switch(IF_ARITHMETIC(arr_Y[I]-Y0))
+        {
+            case -1: goto label_57;
+            case 0: goto label_120;
+            default: goto label_58;
+        }
+        
+        label_57:
+        //    57 IF(YL-Y0) 90,120,120
+        switch(IF_ARITHMETIC(YL-Y0))
+        {
+            case -1: goto label_90;
+            case 0: goto label_120;
+            default: goto label_120;
+        }
+
+        label_58:
+        //    58 IF(YL-Y0) 120,120,90
+        switch(IF_ARITHMETIC(YL-Y0))
+        {
+            case -1: goto label_120;
+            case 0: goto label_120;
+            default: goto label_90;
+        }
+
+        // C
+        label_60:
+        //    60 IL=0
+        IL=0;
+        //       IF(Y(I)-Y0) 90,120,90
+            switch(IF_ARITHMETIC(arr_Y[I]-Y0))
+        {
+            case -1: goto label_90;
+            case 0: goto label_120;
+            default: goto label_90;
+        }
+        label_80:
+        //    80 IF(YL-Y0+(Y(I)-YL)*(X0-XL)/(X(I)-XL)) 90,120,85
+        switch(IF_ARITHMETIC(YL-Y0+(arr_Y[I]-YL)*(X0-XL)/(arr_X[I]-XL)))
+        {
+            case -1: goto label_90;
+            case 0: goto label_120;
+            default: goto label_85;
+        }
+
+        label_85:
+        NPC=NPC+1;
+
+        label_90:
+        XL=arr_X[I];
+        YL=arr_Y[I];
+
+        label_100:
+        continue;
+    }
+
+    NPC = NPC % 2;
+    return;
+
+    label_120:
+    NPC=2;
+    return;
+
+    label_140:
+    std::cout << "0  POLYGON LOGIC ERROR - PROGRAM SHOULD NOT REACH THIS POINT" << std::endl;
+}
+
+void trans4d::RADII(double const& YLAT, double& RADMER, double& RADPAR)
+{
+    // C
+    // C  Computes the radius of curvature in the meridian
+    // C  and the radius of curvature in a parallel of latitude
+    // C
+
+    DECLARE_COMMON_CONST
+    double COSLAT = DCOS(YLAT);
+    double DENOM = DSQRT(1.e0 + EPS*COSLAT*COSLAT);
+    RADMER = AF/(pow(DENOM, 3));
+    RADPAR = AF*COSLAT/DENOM;
+    return;
 }
 
 void::trans4d::SETRF()
@@ -543,4 +1114,133 @@ void trans4d::SETTP()
 
 }
 
+void trans4d::TODMSS(double& val, int& id, int& im, double& s, int& isign)
+{
+    DECLARE_COMMON_CONST
+    while(val > TWOPI)
+    {
+        val = val-TWOPI;
+    }
+ 
+    while(val < -TWOPI)
+    {
+        val = val + TWOPI;
+    }
+
+    if(val < 0)
+        isign=-1;
+    else
+        isign=+1;
+ 
+    s=DABS(val*RHOSEC/3600.0);
+    id=IDINT(s);
+    s=(s-id)*60.0;
+    im=IDINT(s);
+    s=(s-im)*60.0;
+ 
+    // account for rounding error
+ 
+      int is=IDINT(s*1.e5);
+      if(is >= 6000000)
+      {
+        s=0.e0;
+        im=im+1;
+      }
+      if(im >= 60){
+        im=0;
+        id=id+1;
+      }
+}
+
+void trans4d::to_itrf2014(double const& x1, double const& y1, double const& z1,
+double& x2, double& y2, double& z2, double& date, int const& jopt){
+
+    //*** Converts cartesian coordinates in a specified reference
+    //*** to ITRF2014 cartesian coordinates for the given date
+
+    //*** (x1, y1, z1) --> input coordiates (meters)
+    //*** (x2, y2, z2) --> output  ITRF2014 coordinates (meters)
+    //*** date --> time (decimal years) to which the input & output
+    //***          coordinates correspond
+    //*** jopt --> input specifier of input reference frame
+
+    DECLARE_COMMON_TRANPA
+
+    int iopt;
+    double dtime;
+    double tranx, trany, tranz, rotnx, rotny, rotnz, ds;
+
+    if (jopt == 0)
+        iopt = 1;
+    else
+        iopt = jopt;
+
+    dtime = date - refepc[iopt];
+    tranx = -(tx[iopt] + dtx[iopt]*dtime);
+    trany = -(ty[iopt] + dty[iopt]*dtime);
+    tranz = -(tz[iopt] + dtz[iopt]*dtime);
+    rotnx  = -(rx[iopt] + drx[iopt]*dtime);
+    rotny  = -(ry[iopt] + dry[iopt]*dtime);
+    rotnz  = -(rz[iopt] + drz[iopt]*dtime);
+    ds     = 1.e0 - (scale[iopt] + dscale[iopt]*dtime);
+
+    x2 = tranx + ds*x1 + rotnz*y1 - rotny*z1;
+    y2 = trany - rotnz*x1 + ds*y1 + rotnx*z1;
+    z2 = tranz + rotny*x1 - rotnx*y1 + ds*z1;
+}
+
+void trans4d::TOXYZ(double glat, double glon, double eht, double& x, double& y, double& z)
+{
+    // *** compute x,y,z
+    // *** ref p.17 geometric geodesy notes vol 1, osu, rapp
+    
+    //       implicit double precision(a-h,o-z)
+    //       common/CONST/ a,f,e2,ep2,af,pi,twopi,rhosec
+    DECLARE_COMMON_CONST
+ 
+    double slat=DSIN(glat);
+    double clat=DCOS(glat);
+    double w=DSQRT(1.e0-E2*slat*slat);
+    double en=A/w;
+ 
+    x=(en+eht)*clat*DCOS(glon);
+    y=(en+eht)*clat*DSIN(glon);
+    z=(en*(1.e0-E2)+eht)*slat;
+
+    return;
+}
+
+void trans4d::XTOITRF2014(double& X, double& Y, double&Z ,double& RLAT, double& WLON, double& EHT14, double& DATE, int const& IOPT)
+{
+    // Converts X,Y,Z in specified datum to latitude and
+    // longitude (in radians) and height (meters) in ITRF2014
+    // datum with longitude positive west.
+
+    DECLARE_COMMON_CONST
+
+    double X1, Y1, Z1;
+    double ELON;
+
+    // Convert to cartesian coordinates in ITRF2014   
+    if (IOPT == 16)
+    {
+        X1 = X;
+        Y1 = Y;
+        Z1 = Z;
+    }
+    else   
+    {
+        to_itrf2014(X,Y,Z,X1,Y1,Z1,DATE,IOPT);
+    }
+      
+    // Convert to geodetic coordinates
+    if(!FRMXYZ(X1,Y1,Z1,RLAT,ELON,EHT14))
+        //C++ port, don't want to kill the app in the library code STOP(666);
+        std::cout << "FRMXYZ failed! X:" << X << " Y:" << Y << " Z:" << Z << std::endl;
+
+    WLON = -ELON;
+    while(WLON < 0){
+        WLON = WLON + TWOPI;
+    }
+}
 

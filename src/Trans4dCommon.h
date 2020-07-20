@@ -3,11 +3,11 @@
 #define numref 17
 
 #pragma region BNDRY
+#define NMREGN 24
 #define DECLARE_COMMON_BNDRY \
 /* BNDRY */\
 double (&X)[5000 + 1] = common_bndry.X;\
 double (&Y)[5000 + 1] = common_bndry.Y;\
-const int NMREGN = 24;\
 int (&NPOINT)[30 + 1] = common_bndry.NPOINT;
 extern struct BNDRY
 {

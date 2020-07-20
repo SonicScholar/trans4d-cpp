@@ -15,12 +15,12 @@ namespace trans4d
     void InitBlockData();
 
 
-    //todo: sort these out for trans4d
-    //ORIGINAL HTDP FUNCTIONS
+
+    //ORIGINAL HTDP FUNCTIONS with changes for TRANS4D
     //C style Function Prototypes for Fortran Subroutines to be ported
     //ordered A-Z
     void COMPSN(double& YLATT, double& YLONT, double& HTT, double const& YLAT, double const& YLON, double const& HT, int const& MIN, double const& VN, double const& VE, double const& VU);
-    void COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double& VE, double& VU);
+    void COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double& VE, double& VU, double& SN, double& SE, double&SU);
     void DISLOC(double const& YLAT, double const& YLON, double const& STRIKE, double const& HL, double const& EQLAT,
         double const& EQLON, double const& SS, double const& DS, double const& DIP, double const& DEPTH, double const& WIDTH,
         double& DNORTH, double& DWEST, double& DUP);
@@ -28,10 +28,14 @@ namespace trans4d
     void FRIT94_IERS(double x1, double y1, double z1, double& x2, double& y2, double& z2, double& date, int jopt);
     bool FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht);
     void GETBDY();
+    void GETREG(double& X0, double& YKEEP, int& JREGN);
     void GRDAMP(int const& K, int const& I, int const& J, double (&AMP)[2][2][3], double const (&PS)[18000+1]);
     void GRDCHK(double const& POSX, double const& POSY, double const& GRDLX, double const& GRDUX, double const& GRDLY, double const& GRDUY, bool& INSIDE);
     void GRDVEC(int JREGN, int I, int J, double (&VEL)[2][2][3], double (&B)[210000+1]);
     void GRDWEI(double const& YLON, double const& YLAT, int const& JREGN, int& I, int&J, double (&WEI)[2][2] );
+    void GTOVEL(double const& YLAT, double const& YLON,  double const& EHT,
+        double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ, int& JREGN, int const& IOPT,
+        double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ);
     int IPSGRD(int const& IGRID, int const& I, int const& J, int const& IVEC);
     int IUNGRD(int IREGN, int I, int J, int IVEC);
     //C++ Port: Moved IYMDMJ to utility_helpers.h
@@ -52,8 +56,11 @@ namespace trans4d
     void RADR8T(double const& YLAT, double const& VN, double const& VE, double& VNR, double& VER);
     void SETRF();
     void SETTP();
+    void TODMSS(double& val, int& id, int& im, double& s, int& isign);
     void TOIT94(double x1, double y1, double z1, double& x2, double& y2, double& z2, double date, int& jopt);
     void TOIT94_IERS(double& x1, double& y1, double& z1, double x2, double y2, double z2, double date, int& jopt);
+    void to_itrf2014(double const& x1, double const& y1, double const& z1,
+        double& x2, double& y2, double& z2, double& date, int const& jopt);
     void TOMNT(int& IYR, int& IMON, int& IDAY, int& IHR, int& IMN, int& MINS);
     void TOVNEU(double& GLAT, double& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU);
     void TOVXYZ(double& GLAT, double& GLON, double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ);
@@ -61,5 +68,6 @@ namespace trans4d
     void VTRANF(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2);
     void VTRANF_IERS(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2);
     void XTO08(double& X, double& Y, double& Z, double& RLAT, double& RLON, double& EHTNAD, double& DATE, int& IOPT);
+    void XTOITRF2014(double& X, double& Y, double&Z ,double& RLAT, double& WLON, double& EHT14, double& DATE, int const& IOPT);
 
 };

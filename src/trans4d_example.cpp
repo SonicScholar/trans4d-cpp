@@ -26,7 +26,6 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
     DECLARE_COMMON_CONST
     double ELON;
 
-
     //retrieve the name of the point
     cout << " Enter name for point (24 character max)." << endl;
     string inputString;
@@ -44,7 +43,6 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
     cin >> copt;
     if(copt == 1)
     {
-        label_read_latlongheight:
         cout << " Enter latitude degrees-minutes-seconds in free format" << endl;
         cout << " with north being positive. For example,    35,17,28.3" << endl;
         cout << " For a point in the southern hemisphere, enter a minus sign" << endl;
@@ -66,8 +64,7 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
         LAT =  (DBLE((LATD*60 + LATM)*60) + SLAT)/RHOSEC;
 	    LATDIR = 'N';
         ELON = -LON;
-        //todo:
-        //trans4d::TOXYZ(LAT,ELON,EHT,X,Y,Z);
+        trans4d::TOXYZ(LAT,ELON,EHT,X,Y,Z);
 	    LONDIR = 'W';
 	    if (LON < 0.0)
         {
@@ -80,30 +77,83 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
     }
     else if (copt == 2)
     {
+        cout << "Enter X coordinate in meters" << endl;
+        cin >> X;
 
+        cout << "Enter Y coordinate in meters" << endl;
+        cin >> Y;
+
+        cout << "Enter Z coordinate in meters" << endl;
+        cin >> Z;
+        if(!trans4d::FRMXYZ(X, Y, Z, LAT, LON, EHT))
+            STOP(666);
+        LON = -LON;
+        if(LON < 0)
+            LON = LON + TWOPI;
+        int ISIGN;
+        trans4d::TODMSS(LAT,LATD,LATM,SLAT,ISIGN);
+	    LATDIR = 'N';
+	    if (ISIGN == -1) 
+            LATDIR = 'S';
+        trans4d::TODMSS(LON,LOND,LONM,SLON,ISIGN);
+	    LONDIR = 'W';
+	    if (ISIGN == -1) 
+            LONDIR = 'E';
     }
     else
     {
         cout << " Improper response -- try again." << endl;
         goto label_select_coordinate_method;
     }
-    
-    switch (copt)
-    {
-    case 1:
-        goto label_read_latlongheight;
-    case 2:
-        goto label_read_cartesian_xyz;
-        break;
-    default:
-        
-        break;
-    }
 
-    
+    //todo C++ Port todo: error messages
+    //       200 write (*,'(/)') 
+    //       write (*,*) "Failed to read point name: ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
 
-    label_read_cartesian_xyz:
-    cout << endl;
+    //   201 write (*,'(/)') 
+    //       write (*,*) "Failed to read Coord. form option:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   202 write (*,'(/)') 
+    //       write (*,*) "Failed to read latitude:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   203 write (*,'(/)') 
+    //       write (*,*) "Failed to read longitude:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   204 write (*,'(/)') 
+    //       write (*,*) "Failed to read ellipsoidal height:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   205 write (*,'(/)') 
+    //       write (*,*) "Failed to read the X coordinate:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   206 write (*,'(/)') 
+    //       write (*,*) "Failed to read the Y coordinate:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
+
+    //   207 write (*,'(/)') 
+    //       write (*,*) "Failed to read the Z coordinate:ios=",ios
+    //       write (*,*) "ABNORMAL TERMINATION"
+    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
+    //       stop
     
 }
 
