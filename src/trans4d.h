@@ -28,16 +28,17 @@ namespace trans4d
     void FRIT94_IERS(double x1, double y1, double z1, double& x2, double& y2, double& z2, double& date, int jopt);
     bool FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht);
     void GETBDY();
+    void GETGRID(int& jregn);
     void GETREG(double& X0, double& YKEEP, int& JREGN);
     void GRDAMP(int const& K, int const& I, int const& J, double (&AMP)[2][2][3], double const (&PS)[18000+1]);
     void GRDCHK(double const& POSX, double const& POSY, double const& GRDLX, double const& GRDUX, double const& GRDLY, double const& GRDUY, bool& INSIDE);
-    void GRDVEC(int JREGN, int I, int J, double (&VEL)[2][2][3], double (&B)[210000+1]);
+    void GRDVEC(int JREGN, int I, int J, double (&VEL)[2][2][3], double (&B)[800000+1]);
     void GRDWEI(double const& YLON, double const& YLAT, int const& JREGN, int& I, int&J, double (&WEI)[2][2] );
     void GTOVEL(double const& YLAT, double const& YLON,  double const& EHT,
         double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ, int& JREGN, int const& IOPT,
         double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ);
     int IPSGRD(int const& IGRID, int const& I, int const& J, int const& IVEC);
-    int IUNGRD(int IREGN, int I, int J, int IVEC);
+    int IUNGRD(int const& IREGN, int const& I, int const& J, int const& IVEC);
     //C++ Port: Moved IYMDMJ to utility_helpers.h
     //void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD);
     void MODEL();

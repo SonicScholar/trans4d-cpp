@@ -63,6 +63,14 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
 
         LAT =  (DBLE((LATD*60 + LATM)*60) + SLAT)/RHOSEC;
 	    LATDIR = 'N';
+        if(LAT < 0.e0)
+        {
+            LATD = -LATD;
+            LATM = -LATM;
+            SLAT = -SLAT;
+            LATDIR = 'S';
+        }
+        LON = (DBLE((LOND*60 + LONM)*60) + SLON)/RHOSEC;
         ELON = -LON;
         trans4d::TOXYZ(LAT,ELON,EHT,X,Y,Z);
 	    LONDIR = 'W';
@@ -351,6 +359,11 @@ void VELOC()
     char PVOUT;
     string BLAB = "OUTSIDE OF REGION";
 
+    double YLAT, YLON;
+    double VN, VE, VU, VX, VY, VZ;
+    double SN, SE, SU, SX, SY, SZ;
+    int JREGN;
+
     cout << " Please enter name for the file to contain the" << endl
          << " predicted velocities." << endl;
 
@@ -414,6 +427,8 @@ void VELOC()
     {
         GetPoint(LATD, LATM, SLAT, LATDIR, LOND, LONM, SLON, LONDIR,
         NAME24, X, Y, Z, LAT, LON, EHT);
+        trans4d::GTOVEL(LAT, LON, EHT, VN, VE, VU, VX, VY, VZ, JREGN,
+            iopt, SN, SE, SU, SX, SY, SZ);
     }
 
 

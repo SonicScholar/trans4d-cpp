@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "trans4d.h"
 #include "utility_helpers.h"
 
@@ -44,61 +45,44 @@ void trans4d::COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double&
         VX = VX * 1000.e0;
         VY = VY * 1000.e0;
         VZ = VZ * 1000.e0;
-// *** Convert ITRF2008 velocity to NAD_83(CORS96) velocity
-// c       CALL VTRANF(X, Y, Z, VX, VY, VZ, 15, 1)          !No Do not. Leave the velocity in ITRF2008
-        //TODO!!! TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
 
+        TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
+        // Set standard deviations of VN, VE, and VU to 5.0 mm/yr
+        SN = 5.e0;
+        SE = 5.e0;
+        SU = 5.e0;
     }
-    //C++ port TODO!!!
-//     else if(JREGN >= 1 && JREGN <= NUMGRD)
-//     {
 
-// // C*** Get indices for the lower left hand corner of the grid
-// // C*** and get the weights for the four corners
-//         GRDWEI (YLON, YLAT, JREGN, I, J, WEI);
+    else if(JREGN >= 1 && JREGN <= NUMGRD)
+    {
+        // C*** Get indices for the lower left hand corner of the grid
+        // C*** and get the weights for the four corners
+        GRDWEI (YLON, YLAT, JREGN, I, J, WEI);
 
-// // C*** Get the velocity vectors at the four corners
-//         GRDVEC (JREGN, I, J, VEL, b);
+        GETGRID(JREGN);
 
-//         VN = WEI[0][0] * VEL[0][0][0] + WEI[0][1] * VEL[0][1][0]
-//            + WEI[1][0] * VEL[1][0][0] + WEI[1][1] * VEL[1][1][0];
+        // C*** Get the velocity vectors at the four corners
+        GRDVEC(JREGN, I, J, VEL, b);
 
-//         VE = WEI[0][0] * VEL[0][0][1] + WEI[0][1] * VEL[0][1][1]
-//            + WEI[1][0] * VEL[1][0][1] + WEI[1][1] * VEL[1][1][1];
-  
-//         VU = WEI[0][0] * VEL[0][0][2] + WEI[0][1] * VEL[0][1][2]
-//            + WEI[1][0] * VEL[1][0][2] + WEI[1][1] * VEL[1][1][2];
+        VN = WEI[0][0] * VEL[0][0][0] + WEI[0][1] * VEL[0][1][0]
+        + WEI[1][0] * VEL[1][0][0] + WEI[1][1] * VEL[1][1][0];
 
-//     PRINT_DOUBLE(VN)
-//     PRINT_DOUBLE(VE)
-//     PRINT_DOUBLE(VU)
+        VE = WEI[0][0] * VEL[0][0][1] + WEI[0][1] * VEL[0][1][1]
+        + WEI[1][0] * VEL[1][0][1] + WEI[1][1] * VEL[1][1][1];
 
-// // C*** If the point in one of the four Alaskan regions,
-// // C*** then set its vertical velocity to 0.0
-//         if(JREGN >= 7 && JREGN <= 10)
-//            VU = 0.e0;
+        VU = WEI[0][0] * VEL[0][0][2] + WEI[0][1] * VEL[0][1][2]
+        + WEI[1][0] * VEL[1][0][2] + WEI[1][1] * VEL[1][1][2];
 
-// // C*** If the point is in one of the first ten regions, then
-// // c*** the velocity grids contain the ITRF2008 velocity.
-// // c*** Hence, the following code transforms this ITRF2008 velocity
-// // c*** to the corresponding NAD 83 (CORS96) velocity. 
-// // C
-// // c       IF(JREGN .LE. NUMGRD) THEN                            !Starting09/12/2014, the velocities
-// // c          ELON = - YLON                                      !coming out of this routine are in ITRF2008
-// // c          HT = 0.D0
-// // c          CALL TOXYZ(YLAT, ELON, HT, X, Y, Z)
-// // c          CALL TOVXYZ(YLAT, ELON, VN, VE, VU, VX, VY, VZ)
-// // c          CALL VTRANF( X, Y, Z, VX, VY, VZ, 15, 1)
-// // c          CALL TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU)
-// // c       ENDIF
-
-//     }
-//     else
-//     {
-//         std::cout << "Improper region identifier in COMVEL " << std::endl;
-//         STOP(666);
-//     }
-//     return;
+        // C*** If the point is in one of the first 8 regions, then
+        // c*** the velocity grids contain the ITRF2014 velocity.
+    }
+    else
+    {
+        //todo: should this exit the program here in a library?
+        std::cout << "Improper region identifier in COMVEL " << std::endl;
+        exit(666);
+    }
+    return;
 }
 
 bool trans4d::FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht)
@@ -204,6 +188,78 @@ void trans4d::GETBDY()
     }
 }
 
+void trans4d::GETGRID(int& jregn)
+{
+    DECLARE_COMMON_GRIDFILES
+    DECLARE_COMMON_CDGRID
+    DECLARE_COMMON_VGRID
+      
+    if(NeededGrid[jregn] == IGRID) 
+        return;
+         
+    if(NeededGrid[jregn] == 1) 
+    {
+        IGRID = 1;
+        FILE* dataFile = fopen("Data4.2.5A.txt", "rb");
+
+        GridRecord g;
+        long seek = 0;
+        for(int iregn = 1; iregn <= 7; iregn++)
+        {
+            for(int i = 1; i <= ICNTX[iregn] + 1; i++)
+            {
+                for(int j = 1; j <= ICNTY[iregn] + 1; j++)
+                {
+                    fseek(dataFile, seek, SEEK_SET);
+                    size_t result = fread(&g, sizeof(GridRecord), 1, dataFile);
+
+                    int index = IUNGRD(iregn,i,j,1);
+                    int index1 = index + 1;
+                    int index2 = index + 2;
+                    b[index] = g.VN;
+                    c[index] = g.SN;
+                    b[index1] = g.VE;
+                    c[index1] = g.SE;
+                    b[index2] = g.VU;
+                    c[index2] = g.SU;
+
+                    seek += sizeof(GridRecord);
+                }
+            }
+        }
+        fclose(dataFile); 
+    }
+    else if (NeededGrid[jregn] == 2)
+    {
+        IGRID = 2;
+        FILE* dataFile = fopen("Data4.2.5B.txt", "rb");
+
+        GridRecord g;
+        long seek = 0;
+        for(int i = 1; i <= 609 + 1; i++)
+        {
+            for(int j = 1; j <= 289 + 1; j++)
+            {
+                fseek(dataFile, seek, SEEK_SET);
+                size_t result = fread(&g, sizeof(GridRecord), 1, dataFile);
+
+                int index = IUNGRD(jregn,i,j,1);
+                int index1 = index + 1;
+                int index2 = index + 2;
+                b[index] = g.VN;
+                c[index] = g.SN;
+                b[index1] = g.VE;
+                c[index1] = g.SE;
+                b[index2] = g.VU;
+                c[index2] = g.SU;
+
+                seek += sizeof(GridRecord);
+            }
+        }
+        fclose(dataFile);
+      }
+}
+
 void trans4d::GETREG(double& X0, double& YKEEP, int& JREGN)
 {
     DECLARE_COMMON_BNDRY
@@ -232,6 +288,154 @@ void trans4d::GETREG(double& X0, double& YKEEP, int& JREGN)
     if(NTEST == 0) 
         goto label_1;
     JREGN = IR;
+}
+
+void trans4d::GRDVEC(int JREGN, int I, int J, double (&VEL)[2][2][3], double (&B)[800000+1])
+{
+
+// C
+// C********1*********2*********3*********4*********5*********6*********7**
+// C
+// C NAME:        GRDVEC
+// C VERSION:     9302.01   (YYMM.DD)
+// C WRITTEN BY:  MR. C. RANDOLPH PHILIPP
+// C PURPOSE:     THIS SUBROUTINE RETRIEVES THE APPROXIMATE VALUES OF THE
+// C              GRID NODE VELOCITIES FOR GRID (I,J) 
+// C              
+// C  INPUT PARAMETERS FROM ARGUMENT LIST:
+// C  ------------------------------------
+// C JREGN        ID OF GEOGRAPHIC REGION CORRESPONDING TO GRID
+// C I, J         THE COORDINATES OF LOWER LEFT CORNER OF THE GRID
+// C              CONTAINING THE ABOVE POSITION
+// C B            THE ARRAY CONTAINING ALL THE APPROXIMATE VALUES
+// C              FOR THE ADJUSTMENT
+// C
+// C  OUTPUT PARAMETERS FROM ARGUMENT LIST:
+// C  -------------------------------------
+// C VEL          A TWO BY TWO ARRAY CONTAINING THE VELOCITY VECTORS
+// C              FOR THE CORNERS OF THE GRID
+// C
+// C  GLOBAL VARIABLES AND CONSTANTS:
+// C  -------------------------------
+// C NONE
+// C
+// C    THIS MODULE CALLED BY:   COMVEL
+// C
+// C    THIS MODULE CALLS:       NONE
+// C
+// C    INCLUDE FILES USED:      NONE
+// C
+// C    COMMON BLOCKS USED:      NONE     
+// C
+// C    REFERENCES:  SEE RICHARD SNAY
+// C
+// C    COMMENTS:
+// C
+// C********1*********2*********3*********4*********5*********6*********7**
+// C    MOFICATION HISTORY:
+// C::9302.11, CRP, ORIGINAL CREATION FOR DYNAP
+// C::9712.05, RAS, MODIFIED FOR HTDP (version 2.2)
+// C********1*********2*********3*********4*********5*********6*********7**
+
+    for(int II = 0; II <= 1; II++)
+    {
+        for(int IJ = 0; IJ <=1; IJ++)
+        {
+            for(int IVEC = 1; IVEC <= 3; IVEC++)
+            {
+                int INDEX = IUNGRD(JREGN, I + II, J + IJ, IVEC);
+                VEL[II][IJ][IVEC-1] = B[INDEX];
+            }
+        }
+    }
+
+    return;
+}
+
+void trans4d::GRDWEI(double const& YLON, double const& YLAT, int const& JREGN, int& I, int&J, double (&WEI)[2][2] )
+{
+// C
+// C********1*********2*********3*********4*********5*********6*********7**
+// C
+// C NAME:        GRDWEI
+// C VERSION:     9302.01   (YYMM.DD)
+// C WRITTEN BY:  MR. C. RANDOLPH PHILIPP
+// C PURPOSE:     THIS SUBROUTINE RETURNS THE INDICES OF THE LOWER-LEFT
+// C              HAND CORNER OF THE GRID CELL CONTAINING THE POINT
+// C              AND COMPUTES NORMALIZED WEIGHTS FOR 
+// C              BI-LINEAR INTERPOLATION OVER A PLANE
+// C              
+// C  INPUT PARAMETERS FROM ARGUMENT LIST:
+// C  ------------------------------------
+// C YLON         LONGITUDE OF POINT IN RADIANS, POSITIVE WEST
+// C YLAT         LATITUDE OF POINT IN RADIANS, POSITIVE NORTH
+// C JREGN        ID OF GEOGRAPHIC REGION CONTAINING POINT
+// C
+// C  OUTPUT PARAMETERS FROM ARGUMENT LIST:
+// C  -------------------------------------
+// C I, J         THE COORDINATES OF LOWER LEFT CORNER OF THE GRID
+// C              CONTAINING THE ABOVE POSITION
+// C WEI          A TWO BY TWO ARRAY CONTAINING THE NORMALIZED WEIGHTS
+// C              FOR THE CORNER VECTORS
+// C
+// C  GLOBAL VARIABLES AND CONSTANTS:
+// C  -------------------------------
+// C NONE
+// C
+// C    THIS MODULE CALLED BY:   COMVEL
+// C
+// C    THIS MODULE CALLS:       NONE
+// C
+// C    INCLUDE FILES USED:      NONE
+// C
+// C    COMMON BLOCKS USED:      /CDGRID/, /CONST/
+// C
+// C    REFERENCES:  SEE RICHARD SNAY
+// C
+// C    COMMENTS:
+// C
+// C********1*********2*********3*********4*********5*********6*********7**
+// C    MOFICATION HISTORY:
+// C::9302.11, CRP, ORIGINAL CREATION FOR DYNAP
+// C::9511.09, RAS, MODIFIED FOR HTDP
+// C::9712.05, RAS, MODIFIED TO ACCOUNT FOR MULTIPLE GRIDS
+// C********1*********2*********3*********4*********5*********6*********7**
+    
+// C**** COMPUTES THE WEIGHTS FOR AN ELEMENT IN A GRID
+
+    DECLARE_COMMON_CDGRID
+    DECLARE_COMMON_CONST
+
+// C*** Convert input coordinates to degrees
+    double POSX = (TWOPI - YLON) * 180.e0 / PI;
+    double POSY = YLAT * 180.e0 / PI;
+
+// C*** Obtain indices for the lower-left corner of the cell
+// C*** containing the point
+    double STEPX = (GRDUX[JREGN] - GRDLX[JREGN]) / ICNTX[JREGN];
+    double STEPY = (GRDUY[JREGN] - GRDLY[JREGN]) / ICNTY[JREGN];
+    I = IDINT((POSX - GRDLX[JREGN])/STEPX) + 1;
+    J = IDINT((POSY - GRDLY[JREGN])/STEPY) + 1;
+
+// C*** Compute the limits of the grid cell 
+    double GRLX = GRDLX[JREGN] + (I - 1) * STEPX;
+    double GRUX = GRLX + STEPX;       
+    double GRLY = GRDLY[JREGN] + (J - 1) * STEPY;             
+    double GRUY = GRLY + STEPY;
+
+//porting note: leaving original array assignments for reference
+//made array assignments 0 based since the WEI array is not global
+// C*** Compute the normalized weights for the point               
+//       DENOM = (GRUX - GRLX) * (GRUY - GRLY)
+//       WEI(1,1) = (GRUX - POSX) * (GRUY - POSY) / DENOM
+//       WEI(2,1) = (POSX - GRLX) * (GRUY - POSY) / DENOM
+//       WEI(1,2) = (GRUX - POSX) * (POSY - GRLY) / DENOM
+//       WEI(2,2) = (POSX - GRLX) * (POSY - GRLY) / DENOM
+    double DENOM = (GRUX - GRLX) * (GRUY - GRLY);
+    WEI[0][0] = (GRUX - POSX) * (GRUY - POSY) / DENOM;
+    WEI[1][0] = (POSX - GRLX) * (GRUY - POSY) / DENOM;
+    WEI[0][1] = (GRUX - POSX) * (POSY - GRLY) / DENOM;
+    WEI[1][1] = (POSX - GRLX) * (POSY - GRLY) / DENOM;
 }
 
 void trans4d::GTOVEL(double const& YLAT, double const& YLON,  double const& EHT,
@@ -293,7 +497,15 @@ void trans4d::InitBlockData()
         _blockDataInitialized = true;
     }
 }
+int trans4d::IUNGRD(int const& IREGN, int const& I, int const& J, int const& IVEC)
+{
+    DECLARE_COMMON_CDGRID
 
+    int IUNGRD = NBASE[IREGN] +
+           3 * ((J - 1) * (ICNTX[IREGN] + 1) +  (I - 1)) + IVEC;
+
+    return IUNGRD;
+}
 void trans4d::MODEL()
 {
     // *** Obtain parameters defining crustal motion model
@@ -406,14 +618,14 @@ void trans4d::PLATVL(int& IPLATE, double& X, double& Y, double& Z, double& VX, d
     // *** The parameters--WX, WY, and WZ--refer to ITRF2000
     // *** for the Mariana Plate (Snay, 2003). Hence,
     // *** for this plate, VX, VY, and VZ, correspond to ITRF2000.
-    // *** The following code converts these to ITRF2008 velocities for
+    // *** The following code converts these to ITRF2014 velocities for
     // *** this plate.
     if(IPLATE == 6)
     {
          VX = VX*1000.e0;
          VY = VY*1000.e0;
          VZ = VZ*1000.e0;
-         //TODO!!! VTRANF(X, Y, Z, VX, VY, VZ, 11, 15);
+         VTRANF(X, Y, Z, VX, VY, VZ, 11, 15);
          VX = VX/1000.e0;
          VY = VY/1000.e0;
          VZ = VZ/1000.e0;
@@ -481,7 +693,10 @@ void trans4d::POLYIN(double& X0, double& Y0, double& X, double& Y, int& N, int& 
     // C     FIND STARTING POINT WHERE X(I).NE.X0
 
     label_10:
-    IP = IP + 1;
+    
+    //C++ Port, since IP is being used to find the starting point in
+    //an array, it should be 0 initially.
+    //IP = IP + 1;
     
 
     switch(IF_ARITHMETIC(arr_X[IP]-X0))
@@ -1189,6 +1404,20 @@ double& x2, double& y2, double& z2, double& date, int const& jopt){
     z2 = tranz + rotny*x1 - rotnx*y1 + ds*z1;
 }
 
+void trans4d::TOVNEU(double& GLAT, double& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU)
+{
+// *** Convert velocities from vx,vy,vz to vn,ve,vu
+
+    double SLAT = DSIN(GLAT);
+    double CLAT = DCOS(GLAT);
+    double SLON = DSIN(GLON);
+    double CLON = DCOS(GLON);
+
+    VN = -SLAT*CLON*VX - SLAT*SLON*VY + CLAT*VZ;
+    VE = -SLON*VX + CLON*VY;
+    VU = CLAT*CLON*VX + CLAT*SLON*VY + SLAT*VZ;
+}
+
 void trans4d::TOXYZ(double glat, double glon, double eht, double& x, double& y, double& z)
 {
     // *** compute x,y,z
@@ -1208,6 +1437,59 @@ void trans4d::TOXYZ(double glat, double glon, double eht, double& x, double& y, 
     z=(en*(1.e0-E2)+eht)*slat;
 
     return;
+}
+
+void trans4d::VTRANF(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2)
+{
+    // *** Convert velocity from reference frame of IOPT1 to 
+    // *** reference frame of IOPT2.
+
+    DECLARE_COMMON_TRANPA
+
+    double WX = 0;
+    double WY = 0;
+    double WZ = 0;
+    double DS = 0;
+
+    if(IOPT1 <= numref && IOPT2 <= numref && IOPT1 > 0 && IOPT2 > 0 )
+    {
+        // *** Convert from mm/yr to m/yr
+        VX = VX /1000.e0;
+        VY = VY / 1000.e0;
+        VZ = VZ / 1000.e0;
+
+        // *** From IOPT1 to ITRF2014
+        // *** (following equations use approximations assuming
+        // *** that rotations and scale change are small)
+        WX = -drx[IOPT1];           
+        WY = -dry[IOPT1];      
+        WZ = -drz[IOPT1];      
+        DS = -dscale[IOPT1];
+        VX = VX - dtx[IOPT1] + DS*X + WZ*Y - WY*Z;
+        VY = VY - dty[IOPT1] - WZ*X  +DS*Y + WX*Z;
+        VZ = VZ - dtz[IOPT1] + WY*X - WX*Y + DS*Z;
+
+        // *** From ITRF2014 to IOPT2 reference frame
+        // *** (following equations use approximations assuming
+        // ***  that rotations and scale change are small)
+        WX = drx[IOPT2];
+        WY = dry[IOPT2];
+        WZ = drz[IOPT2];
+        DS = dscale[IOPT2];
+        VX = VX + dtx[IOPT2] + DS*X + WZ*Y - WY*Z;
+        VY = VY + dty[IOPT2] - WZ*X + DS*Y + WX*Z;
+        VZ = VZ + dtz[IOPT2] + WY*X - WX*Y + DS*Z;
+
+        // *** FROM m/yr to mm/yr
+        VX = VX * 1000.e0;
+        VY = VY * 1000.e0;
+        VZ = VZ * 1000.e0;
+
+    }
+    else
+    {
+        std::cout << "Improper reference frame in routine vtranf" << std::endl;
+    }
 }
 
 void trans4d::XTOITRF2014(double& X, double& Y, double&Z ,double& RLAT, double& WLON, double& EHT14, double& DATE, int const& IOPT)

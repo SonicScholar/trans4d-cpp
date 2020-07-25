@@ -220,10 +220,37 @@ extern struct TRANPA
 
 #pragma region VGRID
 #define DECLARE_COMMON_VGRID \
-double (&b)[800000 + 1] = common_vgrid.b;
+double (&b)[800000 + 1] = common_vgrid.b; \
+double (&c)[800000 + 1] = common_vgrid.c;
 /* VGRID */
 extern struct VGRID
 {
   double b[800000 +1] = {0};
+  double c[800000 +1] = {0};
 } common_vgrid;
 #pragma endregion
+
+//size of a record in Fortran unformatted files
+struct GridRecord
+{
+    // C++ porting note. Noticed 4 byte padding of 0x3000 at beginning and end of records
+    // Research yields a similar note. The FORTRAN runtime system embeds the record 
+    // boundaries in the data by inserting an INTEGER*4 byte count at the beginning and 
+    // end of each unformatted sequential record during an unformatted sequential WRITE.
+    // https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnc4/index.html
+
+    // the source code for the program that creates the Data records looks like it opens
+    // up the files in sequential mode, instead of direct mode (as noted by not
+    // specifying a record size.) e.g.
+    //       OPEN (I3, FILE = 'Data4.2.5A.txt', STATUS = 'UNKNOWN',
+    // 1          FORM = 'unformatted')
+
+    int padding1;
+    double VN;
+    double SN;
+    double VE;
+    double SE;
+    double VU;
+    double SU;
+    int padding2;
+};
