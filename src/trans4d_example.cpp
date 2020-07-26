@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <string.h>
 #include "trans4d_example.h"
@@ -7,6 +8,9 @@ using std::cin;
 using std::cout;
 using std::endl;
 using std::string;
+//
+using std::fixed;
+using std::setprecision;
 
 //initialize common i/o file stream objects
 trans4d_example commonFiles;
@@ -306,17 +310,19 @@ void PrintProgramDescription()
 
 void ProgramLoop()
 {
-    cout <<" ***************************************" << endl;
-    cout <<" MAIN MENU:" << endl
-         <<"    0... Exit software." << endl
-         <<"    1... Estimate crustal velocities." << endl
-         <<"    2... Estimate crustal displacements between dates." << endl
-         <<"    3... Transform positions and/or observations," << endl
-         <<"           entered in Blue Book format, across time" << endl
-         <<"           and between reference frames." << endl
-         <<"    4... Transform positions, entered in other formats," << endl
-         <<"           across time and between reference frames." << endl
-         <<"    5... Transform velocities between reference frames." << endl;
+    while(true)
+    {
+        cout <<" ***************************************" << endl;
+        cout <<" MAIN MENU:" << endl
+            <<"    0... Exit software." << endl
+            <<"    1... Estimate crustal velocities." << endl
+            <<"    2... Estimate crustal displacements between dates." << endl
+            <<"    3... Transform positions and/or observations," << endl
+            <<"           entered in Blue Book format, across time" << endl
+            <<"           and between reference frames." << endl
+            <<"    4... Transform positions, entered in other formats," << endl
+            <<"           across time and between reference frames." << endl
+            <<"    5... Transform velocities between reference frames." << endl;
 
         int n;
 
@@ -347,7 +353,7 @@ void ProgramLoop()
             goto label_30_read_option;
             break;
         }
-    
+    }
 }
 
 void VELOC()
@@ -429,6 +435,59 @@ void VELOC()
         NAME24, X, Y, Z, LAT, LON, EHT);
         trans4d::GTOVEL(LAT, LON, EHT, VN, VE, VU, VX, VY, VZ, JREGN,
             iopt, SN, SE, SU, SX, SY, SZ);
+        
+        if(JREGN == 0 )
+        {
+            cout << " ************************************* " << endl;
+            cout << " A velocity can not be estimated because" << endl;
+            cout << " the point is outside of the modeled region." << endl;
+            cout << " For additional velocities, please indicate how" << endl;
+            cout << " you wish to supply the horizontal coordinates." << endl;
+        }
+        else
+        {  
+// 	       WRITE(LUOUT,90) VN,SN,VE,SE,VU,SU,
+//      &                        VX,SX,VY,SY,VZ,SZ
+            cout << setprecision(2) << fixed;
+            //todo: C++ port - nice column formatting
+            cout << " **************************************" << endl;
+            cout << " Northward velocity = " << VN << " +/- " << SN << " mm/yr" << endl;
+            cout << " Eastward velocity  = " << VE << " +/- " << SE << " mm/yr" << endl;
+            cout << " Upward velocity    = " << VU << " +/- " << SU << " mm/yr" << endl;
+
+            cout << " X-dim. velocity    = " << VX << " +/- " << SX << " mm/yr" << endl;
+            cout << " Y-dim. velocity    = " << VY << " +/- " << SY << " mm/yr" << endl;
+            cout << " Z-dim velocity     = " << VZ << " +/- " << SZ << " mm/yr" << endl;
+
+            cout << " **************************************" << endl;
+            cout << " For additional velocities, please indicate how " << endl;
+            cout << " you wish to specify the horizontal coordinates." << endl;
+
+            //todo: C++ port write out to commonFiles.I2
+// 	       WRITE(I2,1060)NAME24,LATD,LATM,SLAT,LATDIR,VN,SN,LOND,LONM, 
+//      1                SLON, LONDIR,VE,SE,EHT,VU,SU
+//                write(i2,1061) X,VX,SX,Y,VY,SY,Z,VZ,SZ
+//  1060          FORMAT(/10X,A24,/
+//      1'LATITUDE   = ',2I3,F9.5,1X,A1,'  NORTH VELOCITY =',F7.2,' +/- ',
+//      & f4.2,/
+//      2'LONGITUDE  = ',2I3,F9.5,1X,A1,'  EAST VELOCITY  =',F7.2,' +/- ',
+//      & f4.2,/ 
+//      3'ELLIPS. HT. = ',F10.3,' m', 6X,'UP VELOCITY    =',F7.2,' +/- ',
+//      & f4.2)
+//  1061  Format(
+//      & 'X =',F13.3,' m',14X,'X VELOCITY     =',F7.2,' +/- ',
+//      &    f4.2,/
+//      5 'Y =',F13.3,' m',14X,'Y VELOCITY     =',F7.2,' +/- ',
+//      &    f4.2,/
+//      6 'Z =',F13.3,' m',14X,'Z VELOCITY     =',F7.2,' +/- ',
+//      &    f4.2)
+//   100          FORMAT(A24,1X,I2,1X,I2,1X,F8.5,1X,A1,2X,I3,1X,I2,1X,F8.5,
+//      1            1X,A1,1X,3(F8.2,' +/- ',F4.2))
+//                IF(PVOUT .EQ. 'Y') THEN
+//                    CALL PVPRNT(LATD,LATM,SLAT,LOND,LONM,SLON,VN,VE,VU)
+//                ENDIF
+//            ENDIF
+        }
     }
 
 

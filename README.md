@@ -62,92 +62,91 @@ The `In Progress` section shows what line number the subroutine is translated up
 | SUBROUTINE     | STATUS         | Progress       |
 |----------------|:--------------:|----------------|
 | TRANS4D MAIN   | *              | line 124. skipped line 122: call to dplace |
-| VELOC          | *              | line 2238      |
-| GTOVEL         | *              | line 2577      |
-| COMVEL         | *              | line 410       |
-| PLATVL         | *              | line 573
+| VELOC          | *              | line 2284. Only option1 at this time. skipped writing to file      |
+
+
 
 
 
 ## COMPLETE
 
-| SUBROUTINE     | STATUS         |
-|----------------|:--------------:|
-| MENU1          | Done           |
-| MODEL          | Done           |
-| GETBDY         | Done           |
-| HEADER         | Done           |
-| SETTP          | Done           |
-| SETRF          | Done           |
-| TOXYZ          | Done           |
-| FRMXYZ         | Done           |
-| RADII          | Done           |
-| TODMS          | Done           | 
-| GETPNT         | Done           |
-| to_itrf2014    | Done           |
-| XTOITRF2014    | Done           |
-| POLYIN         | Done           | 
-| GETREG         | Done           |
+| SUBROUTINE              | STATUS         | Notes          |
+|-------------------------|:--------------:|----------------|
+| COMVEL                  | Done           |
+| FRMXYZ                  | Done           |
+| GETBDY                  | Done           |
+| GETGRID                 | Done           |
+| GETPNT                  | Done           |
+| GETREG                  | Done           |
+| GRDVEC                  | Done           |
+| GRDWEI                  | Done           |
+| GTOVEL                  | Done           |
+| HEADER                  | Done           |
+| IYMDMJ                  | Done           |
+| MENU1                   | Done           |
+| MODEL                   | Done           |
+| PLATVL                  | Done           |
+| POLYIN                  | Done           | 
+| RADII                   | Done           |
+| SETRF                   | Done           |
+| SETTP                   | Done           |
+| to_itrf2014             | Done           |
+| TODMSS                  | Done           | 
+| TOXYZ                   | Done           |
+| TOVNEU                  | Done           |
+| TOVXYZ                  | Done           |
+| VTRANF                  | Done           |
+| XTOITRF2014             | Done           |
+| to_std_dev_xyz_velocity | Done           |
+
 
 ## TODO
 
 | SUBROUTINE     | STATUS         | NOTES          |
 |----------------|:--------------:|----------------|
-| DPLACE         | ?              |
-| POLYIN         | ?              |
-| RADR8T         | ?              |
-| COMVEL         | ?              |
-| getgrid        | ?              |
-| PVPRNT         | ?              |
-| DSDA           | ?              |
-| HELINV         | ?              |
-| TRFDAT         | ?              |
-| TNFDAT         | ?              |
-| GETLYN         | ?              |
-| DIRCT1         | ?              |
-| TOCHAR         | ?              |
+| CHECK          | ?              |
+| COMPSN         | ?              |
 | DDXYZ          | ?              |
+| DIRCT1         | ?              |
 | DISLOC         | ?              |
+| DPLACE         | ?              |
+| DSDA           | ?              |
+| extract_name   | ?              |
+| from_itrf2014  | ?              |
+| get_frames     | ?              |
+| GETLYN         | ?              |
+| GETMDY         | ?              |
+| GETPO4         | ?              |
+| GETVLY         | ?              |
+| GRDAMP         | ?              |
+| GRDCHK         | ?              |
+| HELINV         | ?              |
+| interprate_latlon_record        | ?              |  refactor spelling?
+| interprate_latlonvel_record     | ?              |  refactor spelling?
+| interprate_XYZ_record           | ?              |  refactor spelling?
+| NEWCOR         | ?              |
 | OKADA          | ?              |
 | OKADAW         | ?              |
-| GRDWEI         | ?              |
-| GRDVEC         | ?              |
-| RDEG           | ?              |
-| TOMNT          | ?              |
-| TOVNEU         | ?              |
-| TOVXYZ         | ?              |
-| to_std_dev_xyz_velocity      | ?              |
-| XTOITRF2014    | ?              |
-| TRFPOS1        | ?              |
+| PDISP          | ?              |
+| PREDV          | ?              |
 | PRNTTP         | ?              |
-| from_itrf2014  | ?              |
-| trfbb          | ?              |
-| GETPO4         | ?              |
-| UPBB4          | ?              |
-| CHECK          | ?              |
-| UPGFI4         | ?              |
-| TODMSS         | ?              |
+| PRINTVL        | ?              |
+| PSGWEI         | ?              |
+| PVPRNT         | ?              |
+| RADR8T         | ?              |
+| RDEG           | ?              |
 | RFCON          | ?              |
 | RFCON1         | ?              |
-| TRAVEC         | ?              |
-| GETVLY         | ?              |
-| COMPSN         | ?              |
-| NEWCOR         | ?              |
-| PREDV          | ?              |
-| TRFVEL         | ?              |
-| VTRANF         | ?              |
-| PRINTVL        | ?              |
-| GETMDY         | ?              |
-| IYMDMJ         | ?              |
-| PDISP          | ?              |
-| GRDCHK         | ?              |
-| PSGWEI         | ?              |
-| GRDAMP         | ?              |
-| extract_name   | ?              |
-| interprate_XYZ_record        | ?              |  refactor spelling?
-| interprate_latlon_record     | ?              |  refactor spelling?
-| interprate_latlonvel_record  | ?              |  refactor spelling?
-| get_frames     | ?              |
+| TOCHAR         | ?              |
+| TOMNT          | ?              |
+| TNFDAT         | ?              |
 | tran_frames    | ?              |
+| TRAVEC         | ?              |
+| trfbb          | ?              |
+| TRFDAT         | ?              |
+| TRFPOS1        | ?              |
+| TRFVEL         | ?              |
+| UPBB4          | ?              |
+| UPGFI4         | ?              |
 
 ---------------

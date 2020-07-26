@@ -1,3 +1,4 @@
+#include <stdio.h>
 /*PORTED COMMON BLOCKS */
 
 #define numref 17
@@ -253,4 +254,6 @@ struct GridRecord
     double VU;
     double SU;
     int padding2;
+
+    size_t ReadRecordFromFile(FILE* dataFile);
 };

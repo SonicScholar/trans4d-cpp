@@ -64,14 +64,27 @@ void trans4d::COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double&
         // C*** Get the velocity vectors at the four corners
         GRDVEC(JREGN, I, J, VEL, b);
 
+        //C*** Get standard deviations at the four corners
+        GRDVEC(JREGN, I, J, STDEV, c);
+
         VN = WEI[0][0] * VEL[0][0][0] + WEI[0][1] * VEL[0][1][0]
-        + WEI[1][0] * VEL[1][0][0] + WEI[1][1] * VEL[1][1][0];
+           + WEI[1][0] * VEL[1][0][0] + WEI[1][1] * VEL[1][1][0];
 
         VE = WEI[0][0] * VEL[0][0][1] + WEI[0][1] * VEL[0][1][1]
-        + WEI[1][0] * VEL[1][0][1] + WEI[1][1] * VEL[1][1][1];
+           + WEI[1][0] * VEL[1][0][1] + WEI[1][1] * VEL[1][1][1];
 
         VU = WEI[0][0] * VEL[0][0][2] + WEI[0][1] * VEL[0][1][2]
-        + WEI[1][0] * VEL[1][0][2] + WEI[1][1] * VEL[1][1][2];
+           + WEI[1][0] * VEL[1][0][2] + WEI[1][1] * VEL[1][1][2];
+
+
+        SN = WEI[0][0] * STDEV[0][0][0] + WEI[0][1] * STDEV[0][1][0]
+           + WEI[1][0] * STDEV[1][0][0] + WEI[1][1] * STDEV[1][1][0];
+
+        SE = WEI[0][0] * STDEV[0][0][1] + WEI[0][1] * STDEV[0][1][1]
+           + WEI[1][0] * STDEV[1][0][1] + WEI[1][1] * STDEV[1][1][1];
+
+        SU = WEI[0][0] * STDEV[0][0][2] + WEI[0][1] * STDEV[0][1][2]
+           + WEI[1][0] * STDEV[1][0][2] + WEI[1][1] * STDEV[1][1][2];
 
         // C*** If the point is in one of the first 8 regions, then
         // c*** the velocity grids contain the ITRF2014 velocity.
@@ -204,15 +217,14 @@ void trans4d::GETGRID(int& jregn)
 
         GridRecord g;
         long seek = 0;
+        fseek(dataFile, seek, SEEK_SET);
         for(int iregn = 1; iregn <= 7; iregn++)
         {
             for(int i = 1; i <= ICNTX[iregn] + 1; i++)
             {
                 for(int j = 1; j <= ICNTY[iregn] + 1; j++)
                 {
-                    fseek(dataFile, seek, SEEK_SET);
-                    size_t result = fread(&g, sizeof(GridRecord), 1, dataFile);
-
+                    g.ReadRecordFromFile(dataFile);
                     int index = IUNGRD(iregn,i,j,1);
                     int index1 = index + 1;
                     int index2 = index + 2;
@@ -222,8 +234,6 @@ void trans4d::GETGRID(int& jregn)
                     c[index1] = g.SE;
                     b[index2] = g.VU;
                     c[index2] = g.SU;
-
-                    seek += sizeof(GridRecord);
                 }
             }
         }
@@ -473,16 +483,15 @@ double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ)
     COMVEL(RLAT,RLON,JREGN,VN,VE,VU,SN,SE,SU);
 
     ELON = -YLON;
-    //TOVXYZ(YLAT,ELON,VN,VE,VU,VX,VY,VZ);
-    //C++ port TODO!!!!
-    // to_std_dev_xyz_velocity(YLAT,ELON,SN,SE,SU,SX,SY,SZ);
+    TOVXYZ(YLAT,ELON,VN,VE,VU,VX,VY,VZ);
+    to_std_dev_xyz_velocity(YLAT,ELON,SN,SE,SU,SX,SY,SZ);
 
-    // // Convert velocity into another reference frame if needed
-    // if(IOPT != 16)
-    // {
-    //      VTRANF(X,Y,Z,VX,VY,VZ, 16, IOPT);
-    //      TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
-    // }
+    // Convert velocity into another reference frame if needed
+    if(IOPT != 16)
+    {
+         VTRANF(X,Y,Z,VX,VY,VZ, 16, IOPT);
+         TOVNEU(YLAT, ELON, VX, VY, VZ, VN, VE, VU);
+    }
 }
 
 //call this to ensure that data for boundaries, earthquake, post-seismic, and velocity grid are initialized
@@ -729,7 +738,7 @@ void trans4d::POLYIN(double& X0, double& Y0, double& X, double& Y, int& N, int& 
     for(II=IP1; II<=IPN; II++)
     {
         I=II;
-        if(I > N) 
+        if(I >= N) 
         I=I-N;
         // IF(IL) 30,50,40
         switch(IF_ARITHMETIC(IL))
@@ -1404,7 +1413,31 @@ double& x2, double& y2, double& z2, double& date, int const& jopt){
     z2 = tranz + rotny*x1 - rotnx*y1 + ds*z1;
 }
 
-void trans4d::TOVNEU(double& GLAT, double& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU)
+void trans4d::to_std_dev_xyz_velocity(double const& glat,double const& glon, double& sn, double& se,double& su,
+double& sx, double& sy, double& sz)
+{
+    // *** Given standard deviations of velocity in north-south-up
+    // *** Compute standard deviations of velocity in x-y-z
+    // *** Assuming the covariances among north-south-up velocity
+    // ***     components are zero
+
+    double slat = DSIN(glat);
+    double clat = DCOS(glat);
+    double slon = DSIN(glon);
+    double clon = DCOS(glon);
+
+    sx = DSQRT( pow(slat*clon*sn,2)
+              + pow(slon*se,2)
+              + pow(clat*clon*su,2));
+
+    sy = DSQRT( pow(slat*slon*sn,2)
+              + pow(clon*se, 2)
+              + pow(clat*slon*su, 2));
+
+    sz = DSQRT( pow(clat*sn, 2) + pow(slat*su, 2) );
+}
+
+void trans4d::TOVNEU(double const& GLAT, double const& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU)
 {
 // *** Convert velocities from vx,vy,vz to vn,ve,vu
 
@@ -1416,6 +1449,24 @@ void trans4d::TOVNEU(double& GLAT, double& GLON, double& VX, double& VY, double&
     VN = -SLAT*CLON*VX - SLAT*SLON*VY + CLAT*VZ;
     VE = -SLON*VX + CLON*VY;
     VU = CLAT*CLON*VX + CLAT*SLON*VY + SLAT*VZ;
+}
+
+void trans4d::TOVXYZ(double const& GLAT, double const& GLON, double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ)
+{
+// *** Convert velocities from vn,ve,vu to vx,vy,vz
+//       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+//       IMPLICIT INTEGER(I-N)
+
+    double SLAT = DSIN(GLAT);
+    double CLAT = DCOS(GLAT);
+    double SLON = DSIN(GLON);
+    double CLON = DCOS(GLON);
+
+    VX = -SLAT*CLON*VN - SLON*VE + CLAT*CLON*VU;
+    VY = -SLAT*SLON*VN + CLON*VE + CLAT*SLON*VU;
+    VZ =  CLAT*VN + SLAT*VU;
+
+    return;
 }
 
 void trans4d::TOXYZ(double glat, double glon, double eht, double& x, double& y, double& z)

@@ -62,9 +62,11 @@ namespace trans4d
     void TOIT94_IERS(double& x1, double& y1, double& z1, double x2, double y2, double z2, double date, int& jopt);
     void to_itrf2014(double const& x1, double const& y1, double const& z1,
         double& x2, double& y2, double& z2, double& date, int const& jopt);
+    void to_std_dev_xyz_velocity(double const& glat,double const& glon, double& sn, double& se,double& su,
+        double& sx, double& sy, double& sz);
     void TOMNT(int& IYR, int& IMON, int& IDAY, int& IHR, int& IMN, int& MINS);
-    void TOVNEU(double& GLAT, double& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU);
-    void TOVXYZ(double& GLAT, double& GLON, double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ);
+    void TOVNEU(double const& GLAT, double const& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU);
+    void TOVXYZ(double const& GLAT, double const& GLON, double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ);
     void TOXYZ(double glat, double glon, double eht, double& x, double& y, double& z);
     void VTRANF(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2);
     void VTRANF_IERS(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2);
