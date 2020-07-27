@@ -1,4 +1,4 @@
-#include "utility_helpers.h"
+#include "UtilityHelpers.h"
 #include "Trans4dCommon.h"
 
 //You must change Trans4D version here if necessary

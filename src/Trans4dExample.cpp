@@ -1,8 +1,8 @@
 #include <iomanip>
 #include <iostream>
 #include <string.h>
-#include "trans4d_example.h"
-#include "trans4d.h"
+#include "Trans4dExample.h"
+#include "Trans4d.h"
 
 using std::cin;
 using std::cout;
