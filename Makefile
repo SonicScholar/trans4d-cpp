@@ -20,8 +20,7 @@ all: trans4dlib trans4d
 
 meson:
 	meson $(OBJ_DIR)
-	cd $(OBJ_DIR)
-	meson compile
+	cd $(OBJ_DIR) && meson compile
 
 trans4dlib:
 	@mkdir -p $(BUILD_DIR)
