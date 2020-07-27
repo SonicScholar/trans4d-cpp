@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include "trans4d.h"
-#include "utility_helpers.h"
+#include "Trans4d.h"
+#include "UtilityHelpers.h"
 
 bool _blockDataInitialized = false;
 
@@ -206,10 +206,10 @@ void trans4d::GETGRID(int& jregn)
     DECLARE_COMMON_GRIDFILES
     DECLARE_COMMON_CDGRID
     DECLARE_COMMON_VGRID
-      
+
     if(NeededGrid[jregn] == IGRID) 
         return;
-         
+
     if(NeededGrid[jregn] == 1) 
     {
         IGRID = 1;

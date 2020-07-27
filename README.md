@@ -42,7 +42,20 @@ the variable LON might be desired as a double, but implicitly be an int due to t
 
 - Bluebook format related operations are unsupported at this time.
 
+# Compile
+```
+mkdir build
+meson --prefix=<PATH>/bin build
+ninja -C build install
+```
 
+or...
+
+```
+meson builddir
+cd builddir
+meson compile
+```
 
 # Current Porting Progress
 
