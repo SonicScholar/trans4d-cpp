@@ -1,7 +1,7 @@
 # Trans4D Makefile
 GPP := g++
 LIB_SUFFIX := dll
-GPP_FLAGS := -std=c++11 -Iinclude -fPIC
+GPP_FLAGS := -std=c++11 -Iinclude -fPIC -Wall -Wextra
 DEBUG_FLAGS := -g
 BUILD_DIR := bin
 OBJ_DIR := build
