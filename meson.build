@@ -4,11 +4,15 @@ project('trans4d',
   license: 'MIT',
   default_options: ['cpp_std=c++11', 'warning_level=2'])
 
+gtest_proj = subproject('gtest')
+gtest_dep = gtest_proj.get_variable('gtest_main_dep')
+
 inc = include_directories('include')
 
 subdir('include')
 subdir('src')
 subdir('test')
+subdir('doc')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(libraries: libtrans4d,
