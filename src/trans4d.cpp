@@ -715,8 +715,8 @@ void trans4d::GRDWEI(double const& YLON, double const& YLAT, int const& JREGN, i
 }
 
 void trans4d::GTOVEL(double const& YLAT, double const& YLON,  double const& EHT,
-double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ, int& JREGN, int const& IOPT,
-double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ)
+    double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ, int& JREGN, int const& IOPT,
+    double& SN, double& SE, double& SU, double& SX, double& SY, double& SZ)
 {
     // *** Compute velocity in appropriate reference frame for point with
     // *** latitude YLAT (radians), longitude YLON (radians, positive west)
@@ -2074,7 +2074,8 @@ void trans4d::SETTP()
 }
 
 void trans4d::to_itrf2014(double const& x1, double const& y1, double const& z1,
-double& x2, double& y2, double& z2, double& date, int const& jopt){
+    double& x2, double& y2, double& z2, double& date, int const& jopt)
+{
 
     //*** Converts cartesian coordinates in a specified reference
     //*** to ITRF2014 cartesian coordinates for the given date
