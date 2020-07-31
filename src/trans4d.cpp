@@ -5,6 +5,92 @@
 
 bool _blockDataInitialized = false;
 
+void trans4d::COMPSN(double& YLATT, double& YLONT, double& HTT, double const& YLAT, double const& YLON, double const& HT,
+ int const& MIN, double const& VN, double const& VE, double const& VU)
+{
+    // *** Compute the position of a point at specified time
+    // *** Upon input VN, VE, and VU are in mm/yr
+
+    DECLARE_COMMON_CONST
+    DECLARE_COMMON_TIMREF
+    DECLARE_COMMON_QPARM
+
+// ** Compute the contribution due to constant velocity
+    double DTIME = DBLE(MIN - ITREF) / 525960.e0;
+    double VNR = 0;
+    double VER = 0;
+    RADR8T(YLAT,VN,VE,VNR,VER);
+    YLATT = YLAT + VNR*DTIME;
+    YLONT = YLON - VER*DTIME;
+    HTT   = HT + ((VU * DTIME) /1000.e0);
+       
+// ** Compute the contribution due to earthquakes.
+// ** It is assumed that the components of displacement,
+// ** DNORTH,DWEST,DUP, do not vary from one reference
+// ** frame to another given the accuracy of dislocation
+// ** models.
+    
+    int I;
+    int NTIME = 0;
+    double RADMER = 0;
+    double RADPAR = 0;
+    double DDLAT = 0;
+    double DDLON = 0;
+    double DIST = 0;
+    double DNORTH = 0;
+    double DWEST = 0;
+    double DUP = 0;
+
+    //DO 10 I = 1, NUMEQ
+    for(I =1; I<= NUMEQ; I++)
+    {
+        if(ITEQK[I] > ITREF) 
+            NTIME = 1;
+        else
+            NTIME = 0;
+        
+        if(MIN < ITEQK[I]) 
+            NTIME = NTIME - 1;
+        if(NTIME != 0)
+        {
+            RADII(EQLATR[I],RADMER,RADPAR);
+            DDLAT = (YLAT - EQLATR[I])*RADMER;
+            DDLON = (YLON - EQLONR[I])*RADPAR;
+            DIST = DSQRT(DDLAT*DDLAT + DDLON*DDLON);
+            if(DIST <= EQRAD[I])
+            {
+                int ISTART = NLOC[I];
+                int IEND = NLOC[I] + NFP[I] - 1;
+                //DO 5 JREC = ISTART,IEND
+                for(int JREC = ISTART; JREC <= IEND; JREC++)
+                {
+                    
+                    DISLOC(YLAT,YLON,STRIKE[JREC],HL[JREC],
+                      EQLAT[JREC],EQLON[JREC],SSLIP[JREC],     
+                      DSLIP[JREC],DIP[JREC],DEPTH[JREC],
+                      WIDTH[JREC],DNORTH,DWEST,DUP);
+
+                    YLATT = YLATT + NTIME*DNORTH;
+                    YLONT = YLONT + NTIME*DWEST;
+                    HTT   = HTT   + NTIME*DUP;
+                    //     
+                }//5 CONTINUE
+            }//ENDIF
+        } //ENDIF  
+    }//10 CONTINUE
+
+// *** Compute contribution due to postseismic deformation
+    double DEAST = 0;
+    double RMER = 0;
+    double RPAR = 0;
+    PSDISP(YLAT, YLON, MIN, DNORTH, DEAST, DUP);
+    RADII (YLAT, RMER, RPAR);
+    YLATT = YLATT + DNORTH/RMER;
+    YLONT = YLONT - DEAST/RPAR;
+    HTT  = HTT + DUP;
+    return;
+}
+
 void trans4d::COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double& VE, double& VU, double& SN, double& SE, double&SU)
 {
     //
@@ -98,6 +184,73 @@ void trans4d::COMVEL(double& YLAT, double& YLON, int& JREGN, double& VN, double&
     return;
 }
 
+void trans4d::DISLOC(double const& YLAT, double const& YLON, double const& STRIKE, double const& HL,
+    double const& EQLAT, double const& EQLON, double const& SS, double const& DS, 
+    double const& DIP, double const& DEPTH, double const& WIDTH,
+    double& DNORTH, double& DWEST, double& DUP)
+{
+
+    // *** Compute 3-dimensional earthquake displacement at point
+    // *** using dislocation theory
+    // *
+    // *   INPUT:
+    // *         YLAT = Latitude in radians (positive north)
+    // *         YLON = Longitude in radians (positive west)
+    // *         STRIKE = strike in radians clockwise from north such
+    // *                  that the direction of dip is pi/2 radians
+    // *                  counterclockwise from the direction of strike
+    // *         HL   = Half-length in meters
+    // *         EQLAT = Latitude in radians of midpoint of the
+    // *                 rectangle's upper edge (positive north)
+    // *         EQLON = Longitude in radians of midpoint of the
+    // *                 rectangle's upper edge (positive west)
+    // *         SS = strike slip in meters (positive = right lateral)
+    // *         DS = dip slip  in meters (positive = normal faulting)
+    // *         DIP = dip in radians
+    // *         DEPTH = Vertical depth of rectangle's upper edge
+    // *                 in meters
+    // *         WIDTH = width of rectangle in meters
+    // *
+    // *   OUTPUT:
+    // *         DNORTH = northward displacement in radians
+    // *         DWEST = westward displacement in radians
+    // *         DUP = upward displacement in meters
+    // ************** 
+    //       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+    //       IMPLICIT INTEGER(I-N)
+
+    // *** Compute radii of curvature at fault center
+    double RMER = 0;
+    double RPAR = 0;
+    RADII (EQLAT, RMER, RPAR);
+
+    // *** Compute planar coordinates in meters
+    double DLAT = (YLAT - EQLAT) * RMER;
+    double DLON = (YLON - EQLON) * RPAR;
+    double COSSTR = DCOS(STRIKE);
+    double SINSTR = DSIN(STRIKE);
+    double X1 = COSSTR*DLAT - SINSTR*DLON;
+    double X2 = SINSTR*DLAT + COSSTR*DLON;
+
+    // *** Compute displacements in fault-oriented coordinates
+    double U1SS = 0;
+    double U2SS = 0;
+    double U3SS = 0;
+    double U1DS = 0;
+    double U2DS = 0;
+    double U3DS = 0;
+    OKADA(X1,X2,HL,DEPTH,WIDTH,DIP,U1SS,U2SS,U3SS,U1DS,U2DS,U3DS);
+    double U1 = U1SS*SS + U1DS*DS;
+    double U2 = U2SS*SS + U2DS*DS;
+    DUP = U3SS*SS + U3DS*DS;
+
+// *** Convert horizontal displacements to radians
+// *** in north-west coordinate system
+    DNORTH = ( COSSTR*U1 + SINSTR*U2) / RMER;
+    DWEST  = (-SINSTR*U1 + COSSTR*U2) / RPAR;
+    return;
+}
+
 bool trans4d::FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht)
  {
      bool frmxyz;
@@ -160,6 +313,36 @@ bool trans4d::FRMXYZ(double& x, double& y, double& z, double& glat, double& glon
     }
     return frmxyz;
  }
+
+void trans4d::from_itrf2014(double x1, double y1, double z1, double& x2, double& y2, double& z2, double date, int jopt)
+{
+    // *** Converts ITRF2014 cartesian coordinates to cartesian
+    // *** coordinates in the specified reference frame for the
+    // *** given date
+
+    // *** (x1, y1, z1) --> input ITRF94 coordiates (meters)
+    // *** (x2, y2, z2) --> output coordinates (meters)
+    // *** date --> time (decimal years) to which the input & output
+    // ***          coordinates correspond
+    // *** jopt --> input specifier of output reference frame
+
+    DECLARE_COMMON_TRANPA
+
+    int iopt = jopt == 0 ? 1 : jopt;
+
+    double dtime = date - refepc[iopt];
+    double tranx = tx[iopt] + dtx[iopt]*dtime;
+    double trany = ty[iopt] + dty[iopt]*dtime;
+    double tranz = tz[iopt] + dtz[iopt]*dtime;
+    double rotnx  = rx[iopt] + drx[iopt]*dtime;
+    double rotny  = ry[iopt] + dry[iopt]*dtime;
+    double rotnz  = rz[iopt] + drz[iopt]*dtime;
+    double ds     = 1.e0 + scale[iopt] + dscale[iopt]*dtime;
+
+    x2 = tranx + ds*x1 + rotnz*y1 - rotny*z1;
+    y2 = trany - rotnz*x1 + ds*y1 + rotnx*z1;
+    z2 = tranz + rotny*x1 - rotnx*y1 + ds*z1;
+}
 
 void trans4d::GETBDY()
 {
@@ -298,6 +481,89 @@ void trans4d::GETREG(double& X0, double& YKEEP, int& JREGN)
     if(NTEST == 0) 
         goto label_1;
     JREGN = IR;
+}
+
+void trans4d::GRDAMP(int const& K, int const& I, int const& J, double (&AMP)[2][2][3], double const (&PS)[18000+1])
+{
+
+    // C********1*********2*********3*********4*********5*********6*********7**
+    // C
+    // C PURPOSE:     THIS SUBROUTINE RETRIEVES THE AMPLITUDES OF THE FOUR
+    // C              GRID NODES OFGRID K WHERE I,J ARE THE INDICES OF
+    // C              THE LOWER LEFT HAND CORNER
+    // C              
+    // C  INPUT PARAMETERS FROM ARGUMENT LIST:
+    // C  ------------------------------------
+    // C
+    // C K            ID OF EARTHQUAKE CORRESPONDING TO GRID
+    // C I, J         THE COORDINATES OF LOWER LEFT CORNER OF THE GRID
+    // C              CONTAINING THE ABOVE POSITION
+    // C PS           THE ARRAY CONTAINING ALL THE GRIDDED AMPLITUDES
+    // C
+    // C  OUTPUT PARAMETERS FROM ARGUMENT LIST:
+    // C  -------------------------------------
+    // C AMP          A TWO BY TWO ARRAY CONTAINING THE 3D AMPLITUDES
+    // C              FOR THE CORNERS OF THE GRID
+    // C
+    // C  GLOBAL VARIABLES AND CONSTANTS:
+    // C  -------------------------------
+    // C NONE
+    // C
+    // C    THIS MODULE CALLED BY:   PSDISP
+    // C
+    // C    THIS MODULE CALLS:       NONE
+    // C
+    // C    INCLUDE FILES USED:      NONE
+    // C
+    // C    COMMON BLOCKS USED:      NONE     
+    // C
+    // C    REFERENCES:  SEE RICHARD SNAY
+    // C
+    // C    COMMENTS:
+    // C
+    // C********1*********2*********3*********4*********5*********6*********7**
+    // C    MOFICATION HISTORY:
+    // C::2011.08.17, RAS, ORIGINAL CREATION FOR TRANS4D
+    // C********1*********2*********3*********4*********5*********6*********7**
+
+
+    //       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+    //       IMPLICIT INTEGER(I-N)
+    //       DIMENSION AMP(2,2,3), PS(*)
+
+    // DO 30 II = 0,1
+    for(int II=0; II <=1; II++)
+    {
+        // DO 20 IJ = 0,1
+        for(int IJ = 0; IJ <= 1; IJ++)
+        {
+            // DO 10 IVEC = 1, 3
+            for(int IVEC = 1; IVEC <= 3; IVEC++)
+            {
+                int INDEX = IPSGRD(K, I + II, J + IJ, IVEC);
+                //porting note - AMP is a 0 based array, hence the -1's in line below
+                AMP[II + 1 -1][IJ + 1 -1][IVEC -1] = PS[INDEX];
+            }//10 CONTINUE
+        }//20 CONTINUE
+    }//30 CONTINUE     
+
+    return;
+}
+
+void trans4d::GRDCHK(double const& POSX, double const& POSY, double const& GRDLX, double const& GRDUX, double const& GRDLY, double const& GRDUY, bool& INSIDE)
+{
+    // C
+    // C ROUTINE CHECKS IF THE POINT HAVING COORDINATES (POSX, POSY)
+    // C IS WITHIN THE REGION SPANNED BY THE GRID
+    // C
+
+    INSIDE = true;
+
+    if (POSX < GRDLX || POSX > GRDUX)
+        INSIDE = false;
+    if (POSY < GRDLY || POSY > GRDUY)
+        INSIDE = false;
+    return;
 }
 
 void trans4d::GRDVEC(int JREGN, int I, int J, double (&VEL)[2][2][3], double (&B)[800000+1])
@@ -506,6 +772,15 @@ void trans4d::InitBlockData()
         _blockDataInitialized = true;
     }
 }
+
+int trans4d::IPSGRD(int const& IGRID, int const& I, int const& J, int const& IVEC)
+{
+    DECLARE_COMMON_PSGRID
+
+    int result = NBASEP[IGRID] + 3 * ((J - 1) * (ICNTPX[IGRID] + 1) +  (I - 1)) + IVEC;
+    return result;
+}
+
 int trans4d::IUNGRD(int const& IREGN, int const& I, int const& J, int const& IVEC)
 {
     DECLARE_COMMON_CDGRID
@@ -515,6 +790,7 @@ int trans4d::IUNGRD(int const& IREGN, int const& I, int const& J, int const& IVE
 
     return IUNGRD;
 }
+
 void trans4d::MODEL()
 {
     // *** Obtain parameters defining crustal motion model
@@ -556,6 +832,220 @@ void trans4d::MODEL()
     NeededGrid[6] = 1;
     NeededGrid[7] = 1;
     NeededGrid[8] = 2;
+}
+
+void trans4d::NEWCOR(double YLAT, double YLON, double HTOLD, int& MIN1, int& MIN2, double& YLAT3, double& YLON3, double& HTNEW, 
+    double& DN, double& DE, double& DU, double& VN, double& VE, double& VU)
+{
+
+// *** Predict coordinates at time MIN2 given coordinates at time MIN1.
+// *** Predict displacements from time MIN1 to time MIN2.
+
+
+    double HT = HTOLD;
+    
+    double YLAT1 = 0;
+    double YLON1 = 0;
+    double HT1 = 0;
+    COMPSN(YLAT1,YLON1,HT1,YLAT,YLON,HT, MIN1,VN, VE, VU);
+    
+    double YLAT2 = 0;
+    double YLON2 = 0;
+    double HT2 = 0;
+    COMPSN(YLAT2,YLON2,HT2,YLAT,YLON,HT, MIN2, VN, VE, VU);
+
+    YLAT3 = YLAT + YLAT2 - YLAT1;
+    YLON3 = YLON + YLON2 - YLON1;
+    HTNEW   = HT   + HT2   - HT1;
+
+    double RADMER = 0;
+    double RADPAR = 0;
+    RADII(YLAT,RADMER,RADPAR);
+
+    DN =  RADMER * (YLAT2 - YLAT1);
+    DE = -RADPAR * (YLON2 - YLON1);
+    DU =  HT2 - HT1;
+    return;
+}
+
+void trans4d::OKADA(double const& X1, double const& X2, double const& XL, double const& DU, double const& W, double const& DIP,
+    double& U1SS, double& U2SS, double& U3SS, double& U1DS, double& U2DS, double& U3DS)
+    {
+
+// ************************************************************
+// *  This subroutine computes displacements at the point X1,X2
+// *  on the Earth's surface due to 1.0 meter of right-lateral 
+// *  strike slip (SS) and 1.0 meter of normal dip slip (DS) 
+// *  along a rectangular fault.
+// *
+// *  The rectangular fault dips in the direction of the positive
+// *  X2-axis.  The rectangle's strike parallels the X1-axis.
+// *  With the X3-axis directed upward out of the Earth, the X1-,
+// *  X2-, and X3-axes form a right-handed system.
+// *
+// *  The equations of dislocation theory are employed whereby
+// *  Earth is represented an a homogeneous, isotropic half-space
+// *  with a Poisson ratio of PNU.
+// *
+// *  REFERENCE: Okada, Y., Surface deformation due to shear and
+// *    tensile faults in a half-space, Bulletin of the 
+// *    Seismological Society of America, vol. 75, pp. 1135-1154 (1985)
+// *
+// *  The X3 = 0 plane corresponds to the Earth's surface. The plane's
+// *  origin is located directly above the midpoint of the rectangle's
+// *  upper edge.
+// *
+// *  INPUT:
+// *    X1,X2 - Location in meters
+// *    XL    - Rectangle's half-length in meters
+// *    DU    - Vertical depth to rectangle's upper edge in meters
+// *            (always positive or zero)
+// *    W     - Rectangle's width in meters
+// *    DIP   - Rectangle's dip in radians (always between 0 and PI/2
+// *
+// *  OUTPUT
+// *    U1SS  - Displacement in X1-direction due to 1.0 meters
+// *            of right-lateral strike slip
+// *    U2SS  - Displacement in X2-direction due to 1.0 meters
+// *            of right-lateral strike slip
+// *    U3SS  - Displacement in X3-direction due to 1.0 meters
+// *            of right-lateral strike slip
+// *    U1DS  - Displacement in X1-direction due to 1.0 meters
+// *            of normal dip slip
+// *    U2DS  - Displacement in X2-direction due to 1.0 meters
+// *            of normal dip slip
+// *    U3DS  - Displacement in X3-direction due to 1.0 meters
+// *            of normal dip slip
+// *******************************************************************
+
+    double DIPK = 0;
+    bool VERT = false;
+    double PI = common_const.PI;
+    double TWOPI = PI + PI;
+    double PNU = 0.25e0;
+    double RATIO = 1.e0 - 2.e0*PNU;
+
+    if(DABS(PI/2.e0 - DIP) < .01e0)
+    {
+        DIPK = -PI/2.e0;
+        VERT = true;
+    }
+    else
+    {
+        DIPK = -DIP;
+        VERT = false;
+    }
+
+    double SDIP = DSIN(DIPK);
+    double CDIP = DCOS(DIPK);
+    double P = X2*CDIP + DU*SDIP;
+    double Q = X2*SDIP - DU*CDIP;
+
+    double PSI = X1 + XL;
+    double ETA = P;
+    OKADAW(PSI,ETA,Q,SDIP,CDIP,RATIO,TWOPI,VERT,U1SS,U2SS,U3SS,U1DS,U2DS,U3DS);
+
+    PSI = X1 + XL;
+    ETA = P - W;
+    double C1SS = 0;
+    double C2SS = 0;
+    double C3SS = 0;
+    double C1DS = 0;
+    double C2DS = 0;
+    double C3DS = 0;
+    OKADAW(PSI,ETA,Q,SDIP,CDIP,RATIO,TWOPI,VERT,C1SS,C2SS,C3SS,C1DS,C2DS,C3DS);
+    U1SS = U1SS - C1SS;
+    U2SS = U2SS - C2SS;
+    U3SS = U3SS - C3SS;
+    U1DS = U1DS - C1DS;
+    U2DS = U2DS - C2DS;
+    U3DS = U3DS - C3DS;
+
+    PSI = X1 - XL;
+    ETA = P;
+    OKADAW(PSI,ETA,Q,SDIP,CDIP,RATIO,TWOPI,VERT,C1SS,C2SS,C3SS,C1DS,C2DS,C3DS);
+    U1SS = U1SS - C1SS;
+    U2SS = U2SS - C2SS;
+    U3SS = U3SS - C3SS;
+    U1DS = U1DS - C1DS;
+    U2DS = U2DS - C2DS;
+    U3DS = U3DS - C3DS;
+
+    PSI = X1 - XL;
+    ETA = P - W;
+    OKADAW(PSI,ETA,Q,SDIP,CDIP,RATIO,TWOPI,VERT,C1SS,C2SS,C3SS,C1DS,C2DS,C3DS);
+    U1SS = U1SS + C1SS;
+    U2SS = U2SS + C2SS;
+    U3SS = U3SS + C3SS;
+    U1DS = U1DS + C1DS;
+    U2DS = U2DS + C2DS;
+    U3DS = U3DS + C3DS;
+
+    return;
+}
+
+void trans4d::OKADAW(double const& PSI, double const& ETA, double const& Q, double const& SDIP, double const& CDIP, double const& RATIO,
+    double const& TWOPI, bool const& VERT, double& U1SS, double& U2SS, double& U3SS, double& U1DS, double& U2DS, double& U3DS)
+{
+
+    double YBAR = ETA*CDIP + Q*SDIP;
+    double DBAR = ETA*SDIP - Q*CDIP;
+    double R = DSQRT(PSI*PSI + ETA*ETA + Q*Q);
+    double X = DSQRT(PSI*PSI + Q*Q);
+    
+    double TERM = 0;
+    if(DABS(Q) <= 0.1e0)
+        TERM = 0.e0;
+    else
+        TERM = DATAN(PSI*ETA/(Q*R));
+      
+    double F1 = 0;
+    double F2 = 0;
+    double F3 = 0;
+    double F4 = 0;
+    double F5 = 0;
+    if(VERT) 
+    {
+        F5 = -RATIO*PSI*SDIP/(R + DBAR);
+        F4 = -RATIO*Q/(R + DBAR);
+        F3 = 0.5e0*RATIO*(ETA/(R + DBAR) + 
+            YBAR*Q/((R + DBAR)*(R + DBAR))
+            - DLOG(R + ETA));
+         F1 = -0.5e0*RATIO*PSI*Q/
+            ((R + DBAR)*(R + DBAR));
+    }
+    else
+    {
+         if(DABS(PSI) <= 0.1e0)
+         {
+            F5 = 0.e0;
+         }
+         else
+         {
+            F5 = 2.e0*RATIO *
+            DATAN((ETA*(X+Q*CDIP)+X*(R+X)*SDIP) / (PSI*(R+X)*CDIP)) / CDIP;
+         }
+         F4 = RATIO*(DLOG(R+DBAR)-SDIP*DLOG(R+ETA))/CDIP;
+         F3 = RATIO*(YBAR/(CDIP*(R+DBAR)) - DLOG(R+ETA))
+                + SDIP*F4/CDIP;
+         F1 = -RATIO*(PSI/(CDIP*(R+DBAR))) - SDIP*F5/CDIP;
+    }
+    F2 = -RATIO*DLOG(R+ETA) - F3;
+
+    U1SS = -(PSI*Q/(R*(R+ETA))
+            + TERM + F1*SDIP)/TWOPI;
+    U2SS = -(YBAR*Q/(R*(R+ETA))
+            + Q*CDIP/(R+ETA)
+            + F2*SDIP)/TWOPI;
+    U3SS = -(DBAR*Q/(R*(R+ETA))
+            + Q*SDIP/(R+ETA)
+            + F4*SDIP)/TWOPI;
+    U1DS = -(Q/R - F3*SDIP*CDIP)/TWOPI;
+    U2DS = -(YBAR*Q/(R*(R+PSI))
+            + CDIP*TERM - F1*SDIP*CDIP)/TWOPI;
+      U3DS = -(DBAR*Q/(R*(R+PSI))
+            + SDIP*TERM - F5*SDIP*CDIP)/TWOPI;
+    return;
 }
 
 void trans4d::PLATVL(int& IPLATE, double& X, double& Y, double& Z, double& VX, double& VY, double& VZ)
@@ -880,6 +1370,242 @@ void trans4d::POLYIN(double& X0, double& Y0, double& X, double& Y, int& N, int& 
     std::cout << "0  POLYGON LOGIC ERROR - PROGRAM SHOULD NOT REACH THIS POINT" << std::endl;
 }
 
+void trans4d::PREDV(double ylat, double ylon, double eht, double date, int iopt,
+     int& jregn, double& vn, double& ve, double& vu) 
+{
+
+    // ** Predict velocity in iopt reference frame       
+
+    // ** ylat       input - north latitude (radians)
+    // ** ylon       input - west longitude (radians)
+    // ** eht        input - ellipsoid height (meters)
+    // ** date       input - date (decimal years)
+    // ** iopt       input - reference frame
+    // ** jregn      output - deformation region
+    // ** vn         output - northward velocity in mm/yr
+    // ** ve         output - eastward velocity in mm/yr
+    // ** vu         output - upward velocity in mm/yr
+
+
+    //** Get reference latitude (RLAT) and reference longitude (RLON)
+
+    //c*** the following two lines of code were added on July 20, 2015
+    double elon = -ylon;
+    double x, y, z;
+    TOXYZ(ylat,elon,eht,x, y, z);
+
+    double rlat, rlon, eht2014;
+    if(iopt == 16)
+    {
+        rlat = ylat;
+        rlon = ylon;
+    }
+    else
+    {
+        XTOITRF2014(x, y, z, rlat, rlon, eht2014, date, iopt);
+    }
+
+    //** Get deformation region
+
+    GETREG(rlat,rlon,jregn);
+    if(jregn == 0) 
+    {
+        vn = 0.e0;
+        ve = 0.e0;
+        vu = 0.e0;
+        return;
+    }
+    double sn, se, su; //standard deviations of velocities (unused)
+    COMVEL( rlat, rlon, jregn, vn, ve, vu, sn, se, su);
+
+    //c*** Convert  velocity to reference of iopt, if iopt != ITRF2014
+    if (iopt != 16) 
+    {
+        double vx, vy, vz;
+        TOVXYZ(ylat, elon, vn, ve, vu, vx, vy, vz);
+        VTRANF(x, y, z, vx, vy, vz, 16, iopt);
+        TOVNEU(ylat, elon, vx, vy, vz, vn, ve, vu);
+    }
+
+}
+
+void trans4d::PSDISP(double const& YLAT, double const& YLON, int const& MIN, double& DNORTH, double& DEAST, double& DUP)
+{
+    // ********
+    // *   Compute total postseismic displacement for all earthquakes
+    // *
+    // * INPUT
+    // *   YLAT       latitude of point in radians, positive north
+    // *   YLON       longitude of point in radians, positive west
+    // *   MIN        modified julian date of reference epoch for new coordinates
+    // *               in minutes
+    // *
+    // *   DNORTH     Total northward postseismic displacement at point during
+    // *              period from ITREF to MIN in meters
+    // *   DEAST      TOTAL eastward postseismic displacement
+    // *   DUP        Total upward postseismic displacement 
+    // *******
+
+    DECLARE_COMMON_CONST
+    DECLARE_COMMON_TIMREF
+    DECLARE_COMMON_PSGRID
+    DECLARE_COMMON_PGRID
+    
+    //porting note - the following arrays are local to this function and
+    //are ported as 0 based indexes
+    double ITEQ[PSGRID::numpsg] = {0}; 
+    double TAU[PSGRID::numpsg] = {0};  
+    double WEI[2][2] = {0};
+    double AMP[2][2][3] = {0};
+
+    // *** Relaxation constant (in years) for 2002 Denali earthquake
+    TAU[0] = 5.0e0;
+
+    // *** Modified Julian Date (in minutes) for the 2002 Denali earthquake
+    int IYEAR = 2002;
+    int IMO = 11;
+    int IDAY = 3;
+    int MJD = 0;
+    IYMDMJ(IYEAR,IMO,IDAY, MJD);
+    ITEQ[0] = MJD*60*24;
+
+    DNORTH = 0.0e0;
+    DEAST = 0.0e0;
+    DUP = 0.0e0;
+
+    for(int K=1; K <= PSGRID::numpsg; K++)
+    {
+        // *** Check if the point is inside the grid
+        double POSX = YLON*180.e0/PI;
+        POSX = 360.e0 - POSX;
+        if (POSX > 360.e0) 
+            POSX = POSX - 360.e0;
+        double POSY = YLAT*180.e0/PI;
+        bool INSIDE = false;
+        GRDCHK(POSX, POSY, PSGLX[K], PSGUX[K], PSGLY[K], PSGUY[K], INSIDE);
+
+        if (INSIDE)
+        {
+            int I, J;
+            // *** Get the indices for the lower left-hand corner of the grid
+            PSGWEI(POSX,POSY,K,I,J,WEI);
+            // *** Get the displacement amplitude at the four corners
+            GRDAMP(K,I,J,AMP,PS);
+
+            double ANORTH = WEI[0][0]*AMP[0][0][0] + WEI[0][1]*AMP[0][1][0]
+                  + WEI[1][0]*AMP[1][0][0] + WEI[1][1]*AMP[1][1][0];
+            double AEAST  = WEI[0][0]*AMP[0][0][1] + WEI[0][1]*AMP[0][1][1]
+                  + WEI[1][0]*AMP[1][0][1] + WEI[1][1]*AMP[1][1][1];
+            double AUP    = WEI[0][0]*AMP[0][0][2] + WEI[0][1]*AMP[0][1][2]
+                  + WEI[1][0]*AMP[1][0][2] + WEI[1][1]*AMP[1][1][2];
+
+            // *** Convert amplitudes from mm to meters
+            ANORTH = ANORTH / 1000.e0;
+            AEAST =  AEAST  / 1000.e0;
+            AUP =    AUP    / 1000.e0;
+
+            double DTIME = 0;
+            double FACTOR = 0;
+            if (MIN > ITEQ[K])
+            {
+                DTIME = DBLE(MIN - ITEQ[K])/(60.e0*24.e0*365.e0);
+                FACTOR = 1.e0 - DEXP(-DTIME/TAU[K]);
+                DNORTH = DNORTH + ANORTH*FACTOR;
+                DEAST = DEAST + AEAST*FACTOR;
+                DUP = DUP + AUP*FACTOR;
+            }
+            if (ITREF > ITEQ[K])
+            {
+                DTIME = DBLE(ITREF - ITEQ[K])/(60.e0*24.e0*365.e0);
+                FACTOR = 1.e0 - DEXP(-DTIME/TAU[K]);
+                DNORTH = DNORTH - ANORTH*FACTOR;
+                DEAST = DEAST - AEAST*FACTOR;
+                DUP = DUP - AUP*FACTOR;
+            }
+        }
+    //       ENDDO
+    }
+    return;
+}
+
+void trans4d::PSGWEI(double const& POSX, double const& POSY, int const& K, int& I, int& J, double (&WEI)[2][2])
+{
+
+    // C
+    // C********1*********2*********3*********4*********5*********6*********7**
+    // C
+    // C PURPOSE:     THIS SUBROUTINE RETURNS THE INDICES OF THE LOWER-LEFT
+    // C              HAND CORNER OF THE GRID CELL CONTAINING THE POINT
+    // C              AND COMPUTES NORMALIZED WEIGHTS FOR 
+    // C              BI-LINEAR INTERPOLATION OVER A PLANE
+    // C              
+    // C  INPUT PARAMETERS FROM ARGUMENT LIST:
+    // C  ------------------------------------
+    // C POSX         LONGITUDE OF POINT IN DEGREES, POSITIVE EAST
+    // C POSY         LATITUDE OF POINT IN DEGREES, POSITIVE NORTH
+    // C K            ID OF EARTHQUAKE GRID                   
+    // C
+    // C  OUTPUT PARAMETERS FROM ARGUMENT LIST:
+    // C  -------------------------------------
+    // C I, J         THE COORDINATES OF LOWER LEFT CORNER OF THE GRID
+    // C              CONTAINING THE ABOVE POSITION
+    // C WEI          A TWO BY TWO ARRAY CONTAINING THE NORMALIZED WEIGHTS
+    // C              FOR THE CORNER VECTORS
+    // C
+    // C  GLOBAL VARIABLES AND CONSTANTS:
+    // C  -------------------------------
+    // C NONE
+    // C
+    // C    THIS MODULE CALLED BY:   PSDISP
+    // C
+    // C    THIS MODULE CALLS:       NONE
+    // C
+    // C    INCLUDE FILES USED:      NONE
+    // C
+    // C    COMMON BLOCKS USED:      /PSGRID/, /CONST/
+    // C
+    // C    REFERENCES:  SEE RICHARD SNAY
+    // C
+    // C    COMMENTS:
+    // C
+    // C********1*********2*********3*********4*********5*********6*********7**
+    // C    MOFICATION HISTORY:
+    // C::9302.11, CRP, ORIGINAL CREATION FOR DYNAP
+    // C::9511.09, RAS, MODIFIED FOR HTDP
+    // C::9712.05, RAS, MODIFIED TO ACCOUNT FOR MULTIPLE GRIDS
+    // C********1*********2*********3*********4*********5*********6*********7**
+        
+    // C**** COMPUTES THE WEIGHTS FOR AN ELEMENT IN A GRID
+
+    DECLARE_COMMON_PSGRID
+    DECLARE_COMMON_CONST
+
+    // C*** Obtain indices for the lower-left corner of the cell
+    // C*** containing the point
+    double STEPX = (PSGUX[K] - PSGLX[K]) / ICNTPX[K];
+    double STEPY = (PSGUY[K] - PSGLY[K]) / ICNTPY[K];
+    I = IDINT((POSX - PSGLX[K])/STEPX) + 1;
+    J = IDINT((POSY - PSGLY[K])/STEPY) + 1;
+    // c     write(6,1001) K, I, J
+    // c1001 format(1x, 'quake = ', I5 /
+    // c    1       1x, ' i = ', I5 /
+    // c    1       1x, ' j = ', I5)
+
+    // C*** Compute the limits of the grid cell 
+    double GRLX = PSGLX[K] + (I - 1) * STEPX;
+    double GRUX = GRLX + STEPX;
+    double GRLY = PSGLY[K] + (J - 1) * STEPY;
+    double GRUY = GRLY + STEPY;
+
+    // C*** Compute the normalized weights for the point               
+    double DENOM = (GRUX - GRLX) * (GRUY - GRLY);
+    WEI[0][0] = (GRUX - POSX) * (GRUY - POSY) / DENOM;
+    WEI[1][0] = (POSX - GRLX) * (GRUY - POSY) / DENOM;
+    WEI[0][1] = (GRUX - POSX) * (POSY - GRLY) / DENOM;
+    WEI[1][1] = (POSX - GRLX) * (POSY - GRLY) / DENOM;
+    return;
+}
+
 void trans4d::RADII(double const& YLAT, double& RADMER, double& RADPAR)
 {
     // C
@@ -893,6 +1619,15 @@ void trans4d::RADII(double const& YLAT, double& RADMER, double& RADPAR)
     RADMER = AF/(pow(DENOM, 3));
     RADPAR = AF*COSLAT/DENOM;
     return;
+}
+
+void trans4d::RADR8T(double const& YLAT, double const& VN, double const& VE, double& VNR, double& VER)
+{
+    //C Convert horizontal velocities from mm/yr to rad/yr
+    double RADMER, RADPAR;
+    RADII(YLAT,RADMER,RADPAR);
+    VNR = VN / (1000.e0 * RADMER);
+    VER = VE / (1000.e0 * RADPAR);
 }
 
 void::trans4d::SETRF()
@@ -1338,44 +2073,6 @@ void trans4d::SETTP()
 
 }
 
-void trans4d::TODMSS(double& val, int& id, int& im, double& s, int& isign)
-{
-    DECLARE_COMMON_CONST
-    while(val > TWOPI)
-    {
-        val = val-TWOPI;
-    }
- 
-    while(val < -TWOPI)
-    {
-        val = val + TWOPI;
-    }
-
-    if(val < 0)
-        isign=-1;
-    else
-        isign=+1;
- 
-    s=DABS(val*RHOSEC/3600.0);
-    id=IDINT(s);
-    s=(s-id)*60.0;
-    im=IDINT(s);
-    s=(s-im)*60.0;
- 
-    // account for rounding error
- 
-      int is=IDINT(s*1.e5);
-      if(is >= 6000000)
-      {
-        s=0.e0;
-        im=im+1;
-      }
-      if(im >= 60){
-        im=0;
-        id=id+1;
-      }
-}
-
 void trans4d::to_itrf2014(double const& x1, double const& y1, double const& z1,
 double& x2, double& y2, double& z2, double& date, int const& jopt){
 
@@ -1437,6 +2134,125 @@ double& sx, double& sy, double& sz)
     sz = DSQRT( pow(clat*sn, 2) + pow(slat*su, 2) );
 }
 
+void trans4d::TODMSS(double& val, int& id, int& im, double& s, int& isign)
+{
+    DECLARE_COMMON_CONST
+    while(val > TWOPI)
+    {
+        val = val-TWOPI;
+    }
+ 
+    while(val < -TWOPI)
+    {
+        val = val + TWOPI;
+    }
+
+    if(val < 0)
+        isign=-1;
+    else
+        isign=+1;
+ 
+    s=DABS(val*RHOSEC/3600.0);
+    id=IDINT(s);
+    s=(s-id)*60.0;
+    im=IDINT(s);
+    s=(s-im)*60.0;
+ 
+    // account for rounding error
+ 
+      int is=IDINT(s*1.e5);
+      if(is >= 6000000)
+      {
+        s=0.e0;
+        im=im+1;
+      }
+      if(im >= 60){
+        im=0;
+        id=id+1;
+      }
+}
+
+void trans4d::TOMNT(int const& IYR, int const& IMON, int const& IDAY, int& IHR, int& IMN, int& MINS)
+{
+// C********1*********2*********3*********4*********5*********6*********7**
+// C
+// C NAME:       TOMNT (ORIGINALLY IYMDMJ)
+// C VERSION:    9004.17
+// C WRITTEN BY: M. SCHENEWERK
+// C PURPOSE:    CONVERT DATE TO MODIFIED JULIAN DATE PLUS UT
+// C
+// C INPUT PARAMETERS FROM THE ARGUEMENT LIST:
+// C -----------------------------------------
+// C IDAY              DAY
+// C IMON              MONTH
+// C IYR               YEAR
+// C
+// C OUTPUT PARAMETERS FROM ARGUEMENT LIST:
+// C --------------------------------------
+// C MINS              MODIFIED JULIAN DATE IN MINUTES
+// C
+// C
+// C LOCAL VARIABLES AND CONSTANTS:
+// C ------------------------------
+// C A                 TEMPORARY STORAGE
+// C B                 TEMPORARY STORAGE
+// C C                 TEMPORARY STORAGE
+// C D                 TEMPORARY STORAGE
+// C IMOP              TEMPORARY STORAGE
+// C IYRP              TEMPORARY STORAGE
+// C
+// C GLOBAL VARIABLES AND CONSTANTS:
+// C ------------------------------
+// C
+// C
+// C       THIS MODULE CALLED BY: GENERAL USE
+// C
+// C       THIS MODULE CALLS:     DINT
+// C
+// C       INCLUDE FILES USED:
+// C
+// C       COMMON BLOCKS USED:       
+// C
+// C       REFERENCES:            DUFFETT-SMITH, PETER  1982, 'PRACTICAL
+// C                              ASTRONOMY WITH YOUR CALCULATOR', 2ND
+// C                              EDITION, CAMBRIDGE UNIVERSITY PRESS,
+// C                              NEW YORK, P.9
+// C
+// C       COMMENTS:              THIS SUBROUTINE REQUIRES THE FULL YEAR,
+// C                              I.E. 1992 RATHER THAN 92.  
+// C
+// C********1*********2*********3*********4*********5*********6*********7**
+// C::LAST MODIFICATION
+// C::8909.06, MSS, DOC STANDARD IMPLIMENTED
+// C::9004.17, MSS, CHANGE ORDER YY MM DD
+// C********1*********2*********3*********4*********5*********6*********7**
+// C
+    int A, B, C, D;
+    int IYRP = IYR;
+    int IMOP;
+// C
+// C........  0.0  EXPLICIT INITIALIZATION
+// C
+    if( IMON < 3 ) 
+    {
+        IYRP= IYRP - 1;
+        IMOP= IMON + 12;
+    } 
+    else
+    {
+        IMOP= IMON;
+    }
+// C
+// C........  1.0  CALCULATION
+// C
+    A=  IYRP*0.01e0;
+    B=  2 - A + DINT( A*0.25e0 );
+    C=  365.25e0*IYRP;
+    D=  30.6001e0*(IMOP + 1);
+    MINS =  (B + C + D + IDAY - 679006) * (24 * 60)
+        + (60 * IHR) + IMN;    
+}
+
 void trans4d::TOVNEU(double const& GLAT, double const& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU)
 {
 // *** Convert velocities from vx,vy,vz to vn,ve,vu
@@ -1488,6 +2304,133 @@ void trans4d::TOXYZ(double glat, double glon, double eht, double& x, double& y, 
     z=(en*(1.e0-E2)+eht)*slat;
 
     return;
+}
+
+void trans4d::TransformPosition(double latDegrees, double lonDegrees, double eht, int inOpt, int outOpt, double inDate, double outDate,
+    double& newLat, double& newLon, double& newEht)
+{
+    // 
+    // ********1*********2*********3*********4*********5*********6*********7**
+    // 
+    //  NAME:       TransformPosition
+    //  VERSION:    July. 30, 2020
+    //  WRITTEN BY: C. TEWALT (adapted from original TRANS4D subroutine
+    //              TRFPOS1 by R. SNAY)
+    //  PURPOSE:    Transform a position in a given datum and epoch year to
+    //              the specified output datum and epoch year taking into
+    //              account crustal motion for modeled regions. 
+    //  NOTES:      Per R.SNAY: 
+    //              This subroutine uses a two-step process:
+    //              Step 1 transforms the positional coordinates provided
+    //                      in the initial reference frame at the initial time
+    //                      to their corresponding coordinates in this same frame
+    //                      at the ending time
+    //              Step 2 transforms the positional coordinates in the initial
+    //                      frame at the ending time to the corresponding
+    //                      coordinates in the new reference frame at the
+    //                      ending time
+    //              Thus, step 1 involves only time transfer and step 2 
+    //              involves only frame transfer 
+    // 
+    //  INPUT PARAMETERS FROM THE ARGUEMENT LIST:
+    //  -----------------------------------------
+    //  latDegrees          input position latitude decimal degrees in positive North
+    //  lonDegrees          input position longitude decimal degrees in positive East
+    //  eht                 input position ellipsoidal height
+    //  inOpt               input position reference frame specified in IOPT
+    //  outOpt              desired reference frame to transform input position
+    //  inDate              input position epoch year metadata
+    //  outDate             desired epoch year for transformed coordinate  
+    // 
+    //  OUTPUT PARAMETERS FROM ARGUEMENT LIST:
+    //  --------------------------------------
+    //  newLat              transformed position latitude in decimal degrees (positive North)
+    //  newLon              transformed position longitude in decimal degrees (positive East)
+    //  newEht              transformed position ellipsoidal height
+    // 
+    // IOPT VALUES FOR REFERENCE FRAMES:
+    // ------------------------------------------
+    // 1;  "NAD_83(2011/CORS96/2007)";   
+    // 1;  "WGS_84(transit)";
+    // 10; "Stable NA (ITRF2014-PMM)";
+    // 12; "NAD_83(PA11/PACP00)";
+    // 13; "NAD_83(MA11/MARP00)";
+    // /***iframe[6] = 6 (This was incorrect in all versions of HTDP)***/
+    // 5;  "WGS_84(G730)";
+    // 8;  "WGS_84(G873)";
+    // 11; "WGS_84(G1150)";
+    // 15; "WGS_84(G1674)";
+    // 15; "WGS_84(G1762)";
+    // 17; "Pre-CATRF2022 =Caribbean";
+    // 2;  "ITRF88";
+    // 3;  "ITRF89";
+    // 4;  "ITRF90/PNEOS_90/NEOS_90";
+    // 5;  "ITRF91";
+    // 6;  "ITRF92";
+    // 7;  "ITRF93";
+    // 8;  "ITRF94";
+    // 8;  "ITRF96";
+    // 9;  "ITRF97 or IGS97";
+    // 11; "ITRF2000 or IGS00/IGb00";
+    // 14; "ITRF2005 or IGS05";
+    // 15; "ITRF2008 or IGS08/IGb08";
+    // 16; "ITRF2014 or IGS14";
+
+    DECLARE_COMMON_CONST
+
+    // latitude, longitude, ellipsoid height should be in positive
+    // East, North, and Up
+
+    int inDateMINS;
+    DecimalYearToMJDMins(inDate, inDateMINS);
+    
+    int outDateMINS;
+    DecimalYearToMJDMins(outDate, outDateMINS);
+
+    inOpt = 1; //NAD83
+    outOpt = 16; //ITRF2014
+
+    double degPerRad = 180.e0 / PI;
+
+    double rlat = latDegrees / degPerRad;
+    //change to positive west
+    double rlon = lonDegrees / degPerRad;
+
+    double rlat1, rlon1, eht1;
+    if(inDate == outDate)
+    {
+        rlat1 = rlat;
+        rlon1 = rlon;
+        eht1 = eht;
+    }
+    else
+    {
+        int jregn;
+        double vn, ve, vu;
+        //PREDV() requires longitude in positive west
+        trans4d::PREDV(rlat, -rlon, eht, inDate, inOpt, jregn, vn, ve, vu);
+        if(jregn == 0)
+            return;
+        
+        double dn, de, du; //output displacement values (unused)
+        trans4d::NEWCOR(rlat, -rlon, eht, inDateMINS, outDateMINS, rlat1, rlon1, eht1, dn, de, du, vn, ve, vu);
+        rlon1 = -rlon1;
+    }
+    double x, y, z;
+    trans4d::TOXYZ(rlat1, rlon1, eht1, x, y, z);
+    double x1, y1, z1;
+    trans4d::to_itrf2014(x, y, z, x1, y1, z1, outDate, inOpt);
+    double x2, y2, z2;
+    trans4d::from_itrf2014(x1, y1, z1, x2, y2, z2, outDate, outOpt);
+
+    if(!trans4d::FRMXYZ(x2, y2, z2, newLat, newLon, newEht))
+        return;
+
+    // convert transformed coordinates from radians back to decimal degrees
+    // ellipsoid height should already be in meters
+    newLat = newLat * degPerRad;
+    newLon = newLon * degPerRad;
+
 }
 
 void trans4d::VTRANF(double& X, double& Y, double& Z, double& VX, double& VY, double& VZ, int IOPT1, int IOPT2)

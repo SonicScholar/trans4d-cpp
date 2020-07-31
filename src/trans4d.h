@@ -14,6 +14,9 @@ namespace trans4d
 
     void InitBlockData();
 
+    //Main library method for transforming positions
+    void TransformPosition(double latDegrees, double lonDegrees, double eht, int inOpt, int outOpt, double inDate, double outDate,
+    double& newLat, double& newLon, double& newEht);
 
 
     //ORIGINAL HTDP FUNCTIONS with changes for TRANS4D
@@ -24,8 +27,7 @@ namespace trans4d
     void DISLOC(double const& YLAT, double const& YLON, double const& STRIKE, double const& HL, double const& EQLAT,
         double const& EQLON, double const& SS, double const& DS, double const& DIP, double const& DEPTH, double const& WIDTH,
         double& DNORTH, double& DWEST, double& DUP);
-    void FRIT94(double x1, double y1, double z1, double& x2, double& y2, double& z2, double& date, int jopt);
-    void FRIT94_IERS(double x1, double y1, double z1, double& x2, double& y2, double& z2, double& date, int jopt);
+    void from_itrf2014(double x1, double y1, double z1, double& x2, double& y2, double& z2, double date, int jopt);
     bool FRMXYZ(double& x, double& y, double& z, double& glat, double& glon, double& eht);
     void GETBDY();
     void GETGRID(int& jregn);
@@ -42,15 +44,15 @@ namespace trans4d
     //C++ Port: Moved IYMDMJ to utility_helpers.h
     //void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD);
     void MODEL();
-    void NEWCOR(double& YLAT, double& YLON, double& HTOLD, int& MIN1, int& MIN2, double& YLAT3, double& YLON3, double& HTNEW, 
-        double& DN, double& DE, double& DU, double& VN, double& VE, double& VU);
+    void NEWCOR(double YLAT, double YLON, double HTOLD, int& MIN1, int& MIN2, double& YLAT3, double& YLON3, double& HTNEW, 
+    double& DN, double& DE, double& DU, double& VN, double& VE, double& VU);
     void OKADA(double const& X1, double const& X2, double const& XL, double const& DU, double const& W, double const& DIP,
         double& U1SS, double& U2SS, double& U3SS, double& U1DS, double& U2DS, double& U3DS);
     void OKADAW(double const& PSI, double const& ETA, double const& Q, double const& SDIP, double const& CDIP, double const& RATIO,
         double const& TWOPI, bool const& VERT, double& U1SS, double& U2SS, double& U3SS, double& U1DS, double& U2DS, double& U3DS);
     void PLATVL(int& IPLATE, double& X, double& Y, double& Z, double& VX, double& VY, double& VZ);
     void POLYIN(double& X0, double& Y0, double& X, double& Y, int& N, int& NPC);
-    void PREDV(double& ylat, double& ylon, double& eht, double& date, int& iopt, int& jregn, double& vn, double& ve, double& vu);
+    void PREDV(double ylat, double ylon, double eht, double date, int iopt, int& jregn, double& vn, double& ve, double& vu);
     void PSDISP(double const& YLAT, double const& YLON, int const& MIN, double& DNORTH, double& DEAST, double& DUP);
     void PSGWEI(double const& POSX, double const& POSY, int const& K, int& I, int& J, double (&WEI)[2][2]);
     void RADII(double const& YLAT, double& RADMER, double& RADPAR);
@@ -64,7 +66,7 @@ namespace trans4d
         double& x2, double& y2, double& z2, double& date, int const& jopt);
     void to_std_dev_xyz_velocity(double const& glat,double const& glon, double& sn, double& se,double& su,
         double& sx, double& sy, double& sz);
-    void TOMNT(int& IYR, int& IMON, int& IDAY, int& IHR, int& IMN, int& MINS);
+    void TOMNT(int const& IYR, int const& IMON, int const& IDAY, int& IHR, int& IMN, int& MINS);
     void TOVNEU(double const& GLAT, double const& GLON, double& VX, double& VY, double& VZ, double& VN, double& VE, double& VU);
     void TOVXYZ(double const& GLAT, double const& GLON, double& VN, double& VE, double& VU, double& VX, double& VY, double& VZ);
     void TOXYZ(double glat, double glon, double eht, double& x, double& y, double& z);

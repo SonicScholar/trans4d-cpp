@@ -172,7 +172,7 @@ extern struct REFCON
 #pragma region TIMREF
 #define DECLARE_COMMON_TIMREF \
 /* TIMREF */\
-int ITREF = common_timref.ITREF;
+int& ITREF = common_timref.ITREF;
 extern struct TIMREF
 {
     int ITREF;

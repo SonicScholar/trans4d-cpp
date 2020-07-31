@@ -12,9 +12,6 @@ using std::string;
 using std::fixed;
 using std::setprecision;
 
-//initialize common i/o file stream objects
-trans4d_example commonFiles;
-
 /*  GetPoint
     Get a point from stdin via interaction from the user.
     User can specify whether to enter Lat/Long/Ellipsoid Height
@@ -117,62 +114,6 @@ void GetPoint(int& LATD, int& LATM, double& SLAT, char& LATDIR,
         cout << " Improper response -- try again." << endl;
         goto label_select_coordinate_method;
     }
-
-    //todo C++ Port todo: error messages
-    //       200 write (*,'(/)') 
-    //       write (*,*) "Failed to read point name: ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   201 write (*,'(/)') 
-    //       write (*,*) "Failed to read Coord. form option:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   202 write (*,'(/)') 
-    //       write (*,*) "Failed to read latitude:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   203 write (*,'(/)') 
-    //       write (*,*) "Failed to read longitude:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   204 write (*,'(/)') 
-    //       write (*,*) "Failed to read ellipsoidal height:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   205 write (*,'(/)') 
-    //       write (*,*) "Failed to read the X coordinate:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   206 write (*,'(/)') 
-    //       write (*,*) "Failed to read the Y coordinate:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-
-    //   207 write (*,'(/)') 
-    //       write (*,*) "Failed to read the Z coordinate:ios=",ios
-    //       write (*,*) "ABNORMAL TERMINATION"
-    //       write (*,*) "PLEASE CHECK YOUR INPUT FILE AND TRY AGAIN"
-    //       stop
-    
-}
-
-void Header()
-{
-    commonFiles.I2 << " Trans4D (VERSION " << TRANS4D_VERSION << ") OUTPUT" << endl;
-    commonFiles.I2.flush(); //ensures any text still in the buffer is flushed output to file
 }
 
 //Interactively select a reference frame
@@ -345,6 +286,7 @@ void ProgramLoop()
             goto label_30_read_option;
             break;
         case 4:
+            TRANSFORM();
             break;
         case 5:
             break;
@@ -354,6 +296,33 @@ void ProgramLoop()
             break;
         }
     }
+}
+
+void TRANSFORM()
+{
+    //example code for transforming position from
+    // NAD83(2011) epoch 2010.0 to ITRF2014 epoch 2020.0
+    // todo: make this interactive through command line
+    
+    double latDegrees = 40.0001;
+    double lonDegrees = -105.0001;
+    double eht = 1500;
+
+    double inDate = 2010.0;
+    double outDate = 2020.0;
+
+    //todo: make these values constants or enums
+    int nad83Opt = 1;
+    int itrf2014Opt = 16;
+
+    double newLat, newLon, newEht;
+    trans4d::TransformPosition(latDegrees, lonDegrees, eht, nad83Opt, itrf2014Opt, inDate, outDate, newLat, newLon, newEht);
+
+    cout << "transformed position:" << endl;
+    cout << setprecision(8) << fixed << endl;
+    cout << "Lat:    " << newLat << endl;
+    cout << "Lon:    " << newLon << endl;
+    cout << "Height: " << newEht << endl;
 }
 
 void VELOC()
@@ -369,16 +338,6 @@ void VELOC()
     double VN, VE, VU, VX, VY, VZ;
     double SN, SE, SU, SX, SY, SZ;
     int JREGN;
-
-    cout << " Please enter name for the file to contain the" << endl
-         << " predicted velocities." << endl;
-
-    string NAMEF;
-    std::ws(cin); //skip whitespace
-    std::getline(cin, NAMEF);
-    commonFiles.I2.open(NAMEF, std::fstream::in | std::fstream::out | std::fstream::app);
-
-    Header();
     
     // Choosing reference system for velocities
     label_select_reference_frame:
@@ -392,8 +351,8 @@ void VELOC()
 
     if (iopt >= 1 && iopt <= numref)
     {
-        commonFiles.I2 << "Velocities (with standard deviations) in mm/yr" << endl;
-        commonFiles.I2 << "relative to " << frame1 << endl;
+        cout << "Velocities (with standard deviations) in mm/yr" << endl;
+        cout << "relative to " << frame1 << endl;
     }
     else
     {
@@ -425,8 +384,6 @@ void VELOC()
 
     if(OPTION == 0)
     {
-        commonFiles.I2.close();
-        if(PVOUT == 'Y') commonFiles.I3.close();
         return;
     }
     else if (OPTION == 1)
@@ -446,8 +403,6 @@ void VELOC()
         }
         else
         {  
-// 	       WRITE(LUOUT,90) VN,SN,VE,SE,VU,SU,
-//      &                        VX,SX,VY,SY,VZ,SZ
             cout << setprecision(2) << fixed;
             //todo: C++ port - nice column formatting
             cout << " **************************************" << endl;
@@ -462,31 +417,6 @@ void VELOC()
             cout << " **************************************" << endl;
             cout << " For additional velocities, please indicate how " << endl;
             cout << " you wish to specify the horizontal coordinates." << endl;
-
-            //todo: C++ port write out to commonFiles.I2
-// 	       WRITE(I2,1060)NAME24,LATD,LATM,SLAT,LATDIR,VN,SN,LOND,LONM, 
-//      1                SLON, LONDIR,VE,SE,EHT,VU,SU
-//                write(i2,1061) X,VX,SX,Y,VY,SY,Z,VZ,SZ
-//  1060          FORMAT(/10X,A24,/
-//      1'LATITUDE   = ',2I3,F9.5,1X,A1,'  NORTH VELOCITY =',F7.2,' +/- ',
-//      & f4.2,/
-//      2'LONGITUDE  = ',2I3,F9.5,1X,A1,'  EAST VELOCITY  =',F7.2,' +/- ',
-//      & f4.2,/ 
-//      3'ELLIPS. HT. = ',F10.3,' m', 6X,'UP VELOCITY    =',F7.2,' +/- ',
-//      & f4.2)
-//  1061  Format(
-//      & 'X =',F13.3,' m',14X,'X VELOCITY     =',F7.2,' +/- ',
-//      &    f4.2,/
-//      5 'Y =',F13.3,' m',14X,'Y VELOCITY     =',F7.2,' +/- ',
-//      &    f4.2,/
-//      6 'Z =',F13.3,' m',14X,'Z VELOCITY     =',F7.2,' +/- ',
-//      &    f4.2)
-//   100          FORMAT(A24,1X,I2,1X,I2,1X,F8.5,1X,A1,2X,I3,1X,I2,1X,F8.5,
-//      1            1X,A1,1X,3(F8.2,' +/- ',F4.2))
-//                IF(PVOUT .EQ. 'Y') THEN
-//                    CALL PVPRNT(LATD,LATM,SLAT,LOND,LONM,SLON,VN,VE,VU)
-//                ENDIF
-//            ENDIF
         }
     }
 

@@ -36,9 +36,8 @@ inline int IF_ARITHMETIC(double x)
     return 1;
 }
 
-
 /* Utility functions ported from HTDP and TRANS4D */
-inline void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD)
+inline void IYMDMJ(int IYR, int IMON, int IDAY, int& MJD)
 {
 // C NAME:       IYMDMJ
 // C VERSION:    Sep. 17, 2010
@@ -110,5 +109,64 @@ inline void IYMDMJ(int& IYR, int& IMON, int& IDAY, int& MJD)
       MJD =  (B + C + D + IDAY - 679006);
 // C      
     return;
+}
+
+inline void DecimalYearToMJD(double date, int& MJD)
+{
+    int M[12 +1];
+    M[1] = 31;
+    M[2] = 28;
+    M[3] = 31;
+    M[4] = 30;
+    M[5] = 31;
+    M[6] = 30;
+    M[7] = 31;
+    M[8] = 31;
+    M[9] = 30;
+    M[10] = 31;
+    M[11] = 30;
+    M[12] = 31;
+
+    int IYEAR = date;
+    int MJD0;
+    IYMDMJ(IYEAR, 1, 1, MJD0);
+    int IYEAR1 = IYEAR + 1;
+    int MJD1;
+    IYMDMJ(IYEAR1, 1, 1, MJD1);
+    int LEAPDAY = (MJD1 - MJD0) == 366 ? 1 : 0;
+    
+    double REMDAY = (date - IYEAR)* (MJD1 - MJD0);
+    int IBEGIN = 0;
+    int ITOTAL = 31;
+
+
+    if (REMDAY < ITOTAL) 
+    {
+        int MONTH = 1;
+        int IDAY = REMDAY - IBEGIN + 1;
+        IYMDMJ(IYEAR,MONTH,IDAY,MJD);
+        return;
+    }
+    IBEGIN = ITOTAL;
+    ITOTAL = ITOTAL + LEAPDAY;
+    for(int i = 2; i <= 12; i++)
+    {
+        ITOTAL = ITOTAL + M[i];
+        if (REMDAY < ITOTAL) 
+        {
+            int MONTH = i;
+            int IDAY = REMDAY - IBEGIN + 1;
+            IYMDMJ(IYEAR,MONTH,IDAY,MJD);
+            return;
+        }
+        IBEGIN = ITOTAL;
+    }
+}
+
+inline void DecimalYearToMJDMins(double date, int& MINS)
+{
+    int MJD;
+    DecimalYearToMJD(date, MJD);
+    MINS = MJD * 24 * 60;
 }
 #endif
