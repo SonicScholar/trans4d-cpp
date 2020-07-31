@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+    //   {
+    //     "type": "shell",
+    //     "label": "g++.exe build trans4dlib",
+    //     "command": "g++",
+    //     "args": ["-g", "*.cpp", "-shared", "-o", "${workspaceFolder}\\bin\\trans4d.dll"],
+    //     "problemMatcher": ["$gcc"],
+    //     "group": {
+    //       "kind": "build",
+    //       "isDefault": true
+    //     }
+    //   },
+      {
+          "type": "shell",
+          "label": "make all",
+          "command" : "C:\\MinGW\\bin\\mingw32-make.exe",
+          "args": ["all"],
+          "problemMatcher": ["$gcc"],
+          "options": { "cwd": "${workspaceFolder}\\src"},
+          "group": {
+              "kind": "build",
+              "isDefault": true
+          }
+      }
+    ]
+  }
