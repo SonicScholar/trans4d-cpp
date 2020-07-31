@@ -62,7 +62,7 @@ The `In Progress` section shows what line number the subroutine is translated up
 | SUBROUTINE     | STATUS         | Progress       |
 |----------------|:--------------:|----------------|
 | TRANS4D MAIN   | *              | line 124. skipped line 122: call to dplace |
-| VELOC          | *              | line 2284. Only option1 at this time. skipped writing to file      |
+
 
 
 
@@ -73,31 +73,49 @@ The `In Progress` section shows what line number the subroutine is translated up
 | SUBROUTINE              | STATUS         | Notes          |
 |-------------------------|:--------------:|----------------|
 | COMVEL                  | Done           |
+| COMPSN                  | Done           |
+| DISLOC                  | Done           |
 | FRMXYZ                  | Done           |
+| from_itrf2014           | Done           |
 | GETBDY                  | Done           |
 | GETGRID                 | Done           |
-| GETPNT                  | Done           |
 | GETREG                  | Done           |
+| GETPNT                  | Done           |
+| GRDAMP                  | Done           |
+| GRDCHK                  | Done           |
 | GRDVEC                  | Done           |
 | GRDWEI                  | Done           |
 | GTOVEL                  | Done           |
 | HEADER                  | Done           |
+| IPSGRD                  | Done           |
+| IUNGRD                  | Done           |
 | IYMDMJ                  | Done           |
 | MENU1                   | Done           |
 | MODEL                   | Done           |
+| NEWCOR                  | Done           |
+| OKADA                   | Done           |
+| OKADAW                  | Done           |
 | PLATVL                  | Done           |
 | POLYIN                  | Done           | 
+| PREDV                   | Done           |
+| PSDISP                  | Done           |
+| PSGWEI                  | Done           |
 | RADII                   | Done           |
+| RADR8T                  | Done           |
 | SETRF                   | Done           |
 | SETTP                   | Done           |
 | to_itrf2014             | Done           |
+| to_std_dev_xyz_velocity | Done           |
 | TODMSS                  | Done           | 
-| TOXYZ                   | Done           |
+| TOMNT                   | Done           |
 | TOVNEU                  | Done           |
 | TOVXYZ                  | Done           |
+| TransformPosition       | Done           | Adaptation of TRFPOS1
+| TOXYZ                   | Done           |
+| VELOC                   | Done           | Only option1 at this time. |
 | VTRANF                  | Done           |
 | XTOITRF2014             | Done           |
-| to_std_dev_xyz_velocity | Done           |
+
 
 
 ## TODO
@@ -105,48 +123,35 @@ The `In Progress` section shows what line number the subroutine is translated up
 | SUBROUTINE     | STATUS         | NOTES          |
 |----------------|:--------------:|----------------|
 | CHECK          | ?              |
-| COMPSN         | ?              |
 | DDXYZ          | ?              |
-| DIRCT1         | ?              |
-| DISLOC         | ?              |
+| DIRCT1         | ?              | Nice Utility function
 | DPLACE         | ?              |
 | DSDA           | ?              |
-| extract_name   | ?              |
-| from_itrf2014  | ?              |
-| get_frames     | ?              |
-| GETLYN         | ?              |
-| GETMDY         | ?              |
-| GETPO4         | ?              |
-| GETVLY         | ?              |
-| GRDAMP         | ?              |
-| GRDCHK         | ?              |
-| HELINV         | ?              |
+| extract_name   | X              |
+| get_frames     | X              |
+| GETLYN         | X              |
+| GETMDY         | X              |
+| GETPO4         | X              |
+| GETVLY         | X              |
+| HELINV         | ?              | Nice Utility function
 | interprate_latlon_record        | ?              |  refactor spelling?
 | interprate_latlonvel_record     | ?              |  refactor spelling?
 | interprate_XYZ_record           | ?              |  refactor spelling?
-| NEWCOR         | ?              |
-| OKADA          | ?              |
-| OKADAW         | ?              |
-| PDISP          | ?              |
-| PREDV          | ?              |
-| PRNTTP         | ?              |
-| PRINTVL        | ?              |
-| PSGWEI         | ?              |
-| PVPRNT         | ?              |
-| RADR8T         | ?              |
-| RDEG           | ?              |
+| PRNTTP         | X              |
+| PRNTVL         | X              |
+| PVPRNT         | X              |
+| RDEG           | ?              | Nice Utility function
 | RFCON          | ?              |
 | RFCON1         | ?              |
-| TOCHAR         | ?              |
-| TOMNT          | ?              |
-| TNFDAT         | ?              |
-| tran_frames    | ?              |
-| TRAVEC         | ?              |
-| trfbb          | ?              |
-| TRFDAT         | ?              |
-| TRFPOS1        | ?              |
-| TRFVEL         | ?              |
-| UPBB4          | ?              |
-| UPGFI4         | ?              |
+| TOCHAR         | X              |
+| TNFDAT         | X              |
+| tran_frames    | ?              | Not originally part of HTDP. No crustal motion accounted for here.
+| TRAVEC         | ?              | Nice Utility function
+| trfbb          | X              |
+| TRFDAT         | X              |
+| TRFPOS1        | X              | Captured this functionality in TransformPosition
+| TRFVEL         | ?              | Nice Utility Function
+| UPBB4          | X              |
+| UPGFI4         | X              |
 
 ---------------
