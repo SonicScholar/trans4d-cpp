@@ -2388,9 +2388,6 @@ void trans4d::TransformPosition(double latDegrees, double lonDegrees, double eht
     int outDateMINS;
     DecimalYearToMJDMins(outDate, outDateMINS);
 
-    inOpt = 1; //NAD83
-    outOpt = 16; //ITRF2014
-
     double degPerRad = 180.e0 / PI;
 
     double rlat = latDegrees / degPerRad;
