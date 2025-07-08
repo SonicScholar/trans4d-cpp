@@ -1,7 +1,11 @@
 {
-    "files.associations": {
-        "ostream": "cpp",
-        "iostream": "cpp",
-        "iosfwd": "cpp"
-    }
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "ostream": "cpp",
+    "iostream": "cpp",
+    "iosfwd": "cpp",
+    "*.tcc": "cpp",
+    "iomanip": "cpp",
+    "fstream": "cpp"
+  }
 }
